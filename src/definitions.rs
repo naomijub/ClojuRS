@@ -9,7 +9,7 @@ use num_bigint::BigInt;
 use num_traits::ToPrimitive;
 use ordered_float::OrderedFloat;
 
-use crate::{error::Error, funtions::eval_list, Env};
+use crate::{error::Error, funtions::eval_list};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DefinitionTypes {
@@ -89,7 +89,7 @@ impl PartialOrd for DefinitionTypes {
 }
 
 impl DefinitionTypes {
-    pub fn print(&self, env: &mut Env) -> Result<String, Error> {
+    pub fn print(&self) -> Result<String, Error> {
         let res = match self.clone() {
             DefinitionTypes::Symbol(el) => format!("{}", el),
             DefinitionTypes::Keyword(el) => format!(":{}", el),
@@ -104,7 +104,7 @@ impl DefinitionTypes {
             DefinitionTypes::HashSet(set) => {
                 let mut s = String::from("#{");
                 for el in set {
-                    s.push_str(&el.print(env)?);
+                    s.push_str(&el.print()?);
                     s.push_str(" ");
                 }
                 s.push('}');
@@ -113,7 +113,7 @@ impl DefinitionTypes {
             DefinitionTypes::OrderedSet(set) => {
                 let mut s = String::from("#{");
                 for el in set {
-                    s.push_str(&el.print(env)?);
+                    s.push_str(&el.print()?);
                     s.push_str(" ");
                 }
                 s.push('}');
@@ -122,7 +122,7 @@ impl DefinitionTypes {
             DefinitionTypes::Vector(vec) => {
                 let mut s = String::from('[');
                 for el in vec {
-                    s.push_str(&el.print(env)?);
+                    s.push_str(&el.print()?);
                     s.push_str(" ");
                 }
                 s.push(']');
@@ -131,9 +131,9 @@ impl DefinitionTypes {
             DefinitionTypes::HashMap(map) => {
                 let mut s = String::from('{');
                 for (key, val) in map {
-                    s.push_str(&key.print(env)?);
+                    s.push_str(&key.print()?);
                     s.push_str(" ");
-                    s.push_str(&val.print(env)?);
+                    s.push_str(&val.print()?);
                     s.push_str(" ");
                 }
                 s.push('}');
@@ -142,15 +142,15 @@ impl DefinitionTypes {
             DefinitionTypes::OrderedMap(map) => {
                 let mut s = String::from('{');
                 for (key, val) in map {
-                    s.push_str(&key.print(env)?);
+                    s.push_str(&key.print()?);
                     s.push_str(" ");
-                    s.push_str(&val.print(env)?);
+                    s.push_str(&val.print()?);
                     s.push_str(" ");
                 }
                 s.push('}');
                 s
             }
-            DefinitionTypes::List(mut list) => eval_list(&mut list, env)?,
+            DefinitionTypes::List(mut list) => eval_list(&mut list)?,
         };
 
         Ok(res)
@@ -192,7 +192,7 @@ impl ops::Add for DefinitionTypes {
                 DefinitionTypes::Rational(rhs_num, rhs_den) => Ok(DefinitionTypes::Double(
                     (((num.0 * rhs_den.to_f64().ok_or_else(|| Error::IntParseError)?)
                         + rhs_num.to_f64().ok_or_else(|| Error::IntParseError)?)
-                            / rhs_den.to_f64().ok_or_else(|| Error::IntParseError)?)
+                        / rhs_den.to_f64().ok_or_else(|| Error::IntParseError)?)
                     .into(),
                 )),
                 DefinitionTypes::Nil => Ok(DefinitionTypes::Nil),
@@ -205,9 +205,10 @@ impl ops::Add for DefinitionTypes {
                     (num.to_f64().ok_or_else(|| Error::IntParseError)? + rhs_num.0).into(),
                 )),
                 DefinitionTypes::Int(rhs_num) => Ok(DefinitionTypes::Int(num + rhs_num)),
-                DefinitionTypes::Rational(rhs_num, rhs_den) => {
-                    Ok(DefinitionTypes::Rational(rhs_num + (num * &rhs_den), rhs_den))
-                }
+                DefinitionTypes::Rational(rhs_num, rhs_den) => Ok(DefinitionTypes::Rational(
+                    rhs_num + (num * &rhs_den),
+                    rhs_den,
+                )),
                 DefinitionTypes::Nil => Ok(DefinitionTypes::Nil),
                 _ => Err(Error::CantEval(Some(String::from(
                     "Can't add non-numeric to numeric using `+`",
@@ -220,7 +221,9 @@ impl ops::Add for DefinitionTypes {
                         + rhs_num.0)
                         .into(),
                 )),
-                DefinitionTypes::Int(rhs_num) => Ok(DefinitionTypes::Rational(num + (rhs_num * &den), den)),
+                DefinitionTypes::Int(rhs_num) => {
+                    Ok(DefinitionTypes::Rational(num + (rhs_num * &den), den))
+                }
                 DefinitionTypes::Rational(rhs_num, rhs_den) => Ok(DefinitionTypes::Rational(
                     (rhs_num * &den) + (num * &rhs_den),
                     rhs_den * den,
@@ -326,7 +329,7 @@ impl ops::Sub for DefinitionTypes {
                 DefinitionTypes::Rational(rhs_num, rhs_den) => Ok(DefinitionTypes::Double(
                     (((num.0 * rhs_den.to_f64().ok_or_else(|| Error::IntParseError)?)
                         - rhs_num.to_f64().ok_or_else(|| Error::IntParseError)?)
-                            / rhs_den.to_f64().ok_or_else(|| Error::IntParseError)?)
+                        / rhs_den.to_f64().ok_or_else(|| Error::IntParseError)?)
                     .into(),
                 )),
                 DefinitionTypes::Nil => Ok(DefinitionTypes::Nil),
@@ -339,9 +342,10 @@ impl ops::Sub for DefinitionTypes {
                     (num.to_f64().ok_or_else(|| Error::IntParseError)? - rhs_num.0).into(),
                 )),
                 DefinitionTypes::Int(rhs_num) => Ok(DefinitionTypes::Int(num - rhs_num)),
-                DefinitionTypes::Rational(rhs_num, rhs_den) => {
-                    Ok(DefinitionTypes::Rational((num * &rhs_den) - rhs_num, rhs_den))
-                }
+                DefinitionTypes::Rational(rhs_num, rhs_den) => Ok(DefinitionTypes::Rational(
+                    (num * &rhs_den) - rhs_num,
+                    rhs_den,
+                )),
                 DefinitionTypes::Nil => Ok(DefinitionTypes::Nil),
                 _ => Err(Error::CantEval(Some(String::from(
                     "Can't sub non-numeric to numeric using `+`",
@@ -354,7 +358,9 @@ impl ops::Sub for DefinitionTypes {
                         - rhs_num.0)
                         .into(),
                 )),
-                DefinitionTypes::Int(rhs_num) => Ok(DefinitionTypes::Rational(num - (rhs_num * &den), den)),
+                DefinitionTypes::Int(rhs_num) => {
+                    Ok(DefinitionTypes::Rational(num - (rhs_num * &den), den))
+                }
                 DefinitionTypes::Rational(rhs_num, rhs_den) => Ok(DefinitionTypes::Rational(
                     (num * &rhs_den) - (rhs_num * &den),
                     rhs_den * den,

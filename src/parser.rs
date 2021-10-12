@@ -148,7 +148,7 @@ fn read_number(
         .ok_or_else(|| Error::Reason("Could not identify symbol index".to_string()))?
         .0;
 
-        let c_len = chars
+    let c_len = chars
         .clone()
         .take_while(|c| c.1.is_numeric() || c.1 == '.' || c.1 == '/')
         .count();

@@ -1,3 +1,8 @@
+#[macro_use]
+extern crate lazy_static;
+
+use std::{io::Write, sync::Mutex};
+
 use definitions::DefinitionTypes;
 use error::Error;
 use funtions::Func;
@@ -6,7 +11,10 @@ use parser::{parse, tokenize};
 
 use im::{hashmap, HashMap as Hamt};
 
-use crate::funtions::{math::{sub, plus}, meaning_of_life};
+use crate::funtions::{
+    math::{is_negative, is_numeric, is_positive, plus, sub},
+    meaning_of_life,
+};
 
 pub(crate) mod definitions;
 pub mod error;
@@ -14,12 +22,25 @@ pub mod funtions;
 pub(crate) mod helper;
 pub(crate) mod parser;
 
+lazy_static! {
+    pub static ref STD: Hamt<String, Func> = hashmap! {
+        String::from("+") => plus as Func,
+        String::from("-") => sub as Func,
+        String::from("meaning-of-life") => meaning_of_life as Func,
+        String::from("neg?") => is_negative as Func,
+        String::from("pos?") => is_positive as Func,
+        String::from("num?") => is_numeric as Func,
+    };
+    pub static ref LOCAL: Mutex<Hamt<String, Func>> = Mutex::new(Hamt::new());
+    pub static ref DATA: Mutex<Hamt<String, DefinitionTypes>> = Mutex::new(Hamt::new());
+}
+
 fn main() {
-    let env = &mut Env::new();
     loop {
-        println!("Crs > ");
+        print!("Crs > ");
+        std::io::stdout().flush().unwrap();
         let expr = slurp_expr();
-        match read(&expr, env) {
+        match read(&expr) {
             Ok(resp) => println!("{}", resp),
             Err(err) => println!("{:?}", err),
         }
@@ -36,28 +57,9 @@ fn slurp_expr() -> String {
     expr
 }
 
-fn read(list: &str, env: &mut Env) -> Result<String, Error> {
+fn read(list: &str) -> Result<String, Error> {
     let clean = String::from(list.maybe_replace("#{", "@").trim_start());
     let mut tokens = tokenize(&clean);
     let parsed = parse(tokens.next(), &mut tokens)?;
-    parsed.print(env)
-}
-
-pub struct Env {
-    data: Hamt<String, DefinitionTypes>,
-    func: Hamt<String, Func>,
-}
-
-impl Env {
-    fn new() -> Self {
-        let funcs: Hamt<String, Func> = hashmap! {
-            String::from("+") => plus as Func,
-            String::from("-") => sub as Func,
-            String::from("meaning-of-life") => meaning_of_life as Func,
-        };
-        Self {
-            data: Hamt::new(),
-            func: funcs,
-        }
-    }
+    parsed.print()
 }
