@@ -14,7 +14,7 @@ pub fn eval_list(list: &mut Vec<DefinitionTypes>) -> Result<String, Error> {
     let next = list.next();
     if let Some(DefinitionTypes::Symbol(symbol)) = next {
         let rest: Vec<DefinitionTypes> = list.map(|e| e.clone()).collect();
-        STD.get(symbol).ok_or_else(|| Error::UnknownSymbol)?(&rest)?.print()
+        STD.get(symbol).ok_or_else(|| Error::UnknownSymbol(symbol.to_string()))?(&rest)?.print()
     } else {
         let next = next.map(|e| e.print().unwrap_or(String::new()));
         Err(Error::CantEval(next))

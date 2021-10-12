@@ -225,7 +225,11 @@ impl ops::Add for DefinitionTypes {
                     Ok(DefinitionTypes::Rational(num + (rhs_num * &den), den))
                 }
                 DefinitionTypes::Rational(rhs_num, rhs_den) => Ok(DefinitionTypes::Rational(
-                    (rhs_num * &den) + (num * &rhs_den),
+                    if &den != &rhs_den {
+                        (rhs_num * &den) + (num * &rhs_den)
+                    } else {
+                        rhs_num + num
+                    },
                     rhs_den * den,
                 )),
                 DefinitionTypes::Nil => Ok(DefinitionTypes::Nil),
@@ -242,7 +246,7 @@ impl ops::Add for DefinitionTypes {
                     Ok(DefinitionTypes::HashSet(v))
                 } else {
                     Err(Error::CantEval(Some(String::from(
-                        "Can't add non-ordered-map to ordered-map using `+`",
+                        "Can't add non-hash-set to hash-set using `+`",
                     ))))
                 }
             }
@@ -254,7 +258,7 @@ impl ops::Add for DefinitionTypes {
                     Ok(DefinitionTypes::OrderedSet(v))
                 } else {
                     Err(Error::CantEval(Some(String::from(
-                        "Can't add non-ordered-map to ordered-map using `+`",
+                        "Can't add non-ordered-set to ordered-set using `+`",
                     ))))
                 }
             }
@@ -370,69 +374,22 @@ impl ops::Sub for DefinitionTypes {
                     "Can't sub non-numeric to numeric using `+`",
                 )))),
             },
-            DefinitionTypes::HashSet(v) => {
-                if let DefinitionTypes::HashSet(rhs_v) = rhs {
-                    let mut v = v.clone();
-                    for k in rhs_v {
-                        v.insert(k);
-                    }
-                    Ok(DefinitionTypes::HashSet(v))
-                } else {
-                    Err(Error::CantEval(Some(String::from(
-                        "Can't add non-ordered-map to ordered-map using `+`",
-                    ))))
-                }
-            }
-            DefinitionTypes::OrderedSet(v) => {
-                if let DefinitionTypes::OrderedSet(rhs_v) = rhs {
-                    let mut v = v.clone();
-                    let mut rhs_v = rhs_v.clone();
-                    v.append(&mut rhs_v);
-                    Ok(DefinitionTypes::OrderedSet(v))
-                } else {
-                    Err(Error::CantEval(Some(String::from(
-                        "Can't add non-ordered-map to ordered-map using `+`",
-                    ))))
-                }
-            }
-            DefinitionTypes::HashMap(v) => {
-                if let DefinitionTypes::HashMap(rhs_v) = rhs {
-                    let mut v = v.clone();
-                    for (k, val) in rhs_v {
-                        v.insert(k, val);
-                    }
-                    Ok(DefinitionTypes::HashMap(v))
-                } else {
-                    Err(Error::CantEval(Some(String::from(
-                        "Can't add non-hash-map to hash-map using `+`",
-                    ))))
-                }
-            }
-            DefinitionTypes::OrderedMap(v) => {
-                if let DefinitionTypes::OrderedMap(rhs_v) = rhs {
-                    let mut v = v.clone();
-                    let mut rhs_v = rhs_v.clone();
-                    v.append(&mut rhs_v);
-                    Ok(DefinitionTypes::OrderedMap(v))
-                } else {
-                    Err(Error::CantEval(Some(String::from(
-                        "Can't add non-ordered-map to ordered-map using `+`",
-                    ))))
-                }
-            }
+            DefinitionTypes::HashSet(_) => Err(Error::CantEval(Some(String::from(
+                "Can't eval sub of hash-set using `-`",
+            )))),
+            DefinitionTypes::OrderedSet(_) => Err(Error::CantEval(Some(String::from(
+                "Can't eval sub of ordered-set using `-`",
+            )))),
+            DefinitionTypes::HashMap(_) => Err(Error::CantEval(Some(String::from(
+                "Can't eval sub of hash-map using `-`",
+            )))),
+            DefinitionTypes::OrderedMap(_) => Err(Error::CantEval(Some(String::from(
+                "Can't eval sub of ordered-map using `-`",
+            )))),
             DefinitionTypes::List(_) => todo!("eval list not implemented"),
-            DefinitionTypes::Vector(v) => {
-                if let DefinitionTypes::Vector(rhs_v) = rhs {
-                    let mut v = v.clone();
-                    let mut rhs_v = rhs_v.clone();
-                    v.append(&mut rhs_v);
-                    Ok(DefinitionTypes::Vector(v))
-                } else {
-                    Err(Error::CantEval(Some(String::from(
-                        "Can't add non-vector to vector using `+`",
-                    ))))
-                }
-            }
+            DefinitionTypes::Vector(_) => Err(Error::CantEval(Some(String::from(
+                "Can't eval sub of vector using `-`",
+            )))),
             DefinitionTypes::Nil => Ok(DefinitionTypes::Nil),
         }?;
 
