@@ -6,7 +6,7 @@ use parser::{parse, tokenize};
 
 use im::{hashmap, HashMap as Hamt};
 
-use crate::funtions::{math::plus, meaning_of_life};
+use crate::funtions::{math::{sub, plus}, meaning_of_life};
 
 pub(crate) mod definitions;
 pub mod error;
@@ -17,7 +17,7 @@ pub(crate) mod parser;
 fn main() {
     let env = &mut Env::new();
     loop {
-        println!("Crs >");
+        println!("Crs > ");
         let expr = slurp_expr();
         match read(&expr, env) {
             Ok(resp) => println!("{}", resp),
@@ -52,6 +52,7 @@ impl Env {
     fn new() -> Self {
         let funcs: Hamt<String, Func> = hashmap! {
             String::from("+") => plus as Func,
+            String::from("-") => sub as Func,
             String::from("meaning-of-life") => meaning_of_life as Func,
         };
         Self {
