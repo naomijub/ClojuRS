@@ -8,3 +8,5 @@ edition = "2018"
 [dependencies]
 im = { version = "15.0", features = ["proptest", "serde"] }
 ordered-float = "2.0"
+num-bigint = "0.4"
+num-traits = "0.2.14"

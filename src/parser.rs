@@ -1,8 +1,12 @@
-use std::{collections::{HashMap, HashSet}, str::FromStr};
+use std::{
+    collections::{HashMap, HashSet},
+    str::FromStr,
+};
 
+use num_bigint::BigInt;
 use ordered_float::OrderedFloat;
 
-use crate::definitions::{DefinitionTypes, Error};
+use crate::{definitions::DefinitionTypes, error::Error};
 
 pub(crate) fn tokenize(exp: &str) -> std::iter::Enumerate<std::str::Chars> {
     exp.chars().enumerate()
@@ -37,14 +41,20 @@ pub(crate) fn parse_edn(
     }
 }
 
-fn read_key_or_nsmap(chars: &mut std::iter::Enumerate<std::str::Chars>) -> Result<DefinitionTypes, Error> {
+fn read_key_or_nsmap(
+    chars: &mut std::iter::Enumerate<std::str::Chars>,
+) -> Result<DefinitionTypes, Error> {
     let mut key_chars = chars.clone().take_while(|c| {
         !c.1.is_whitespace() && c.1 != ',' && c.1 != ')' && c.1 != ']' && c.1 != '}'
     });
     let c_len = key_chars.clone().count();
 
     Ok(match key_chars.find(|c| c.1 == '{') {
-        Some(_) => return Err(Error::Reason(String::from("Namespace maps not yet supported"))),//read_namespaced_map(chars)?,
+        Some(_) => {
+            return Err(Error::Reason(String::from(
+                "Namespace maps not yet supported",
+            )))
+        } //read_namespaced_map(chars)?,
         None => read_key(chars, c_len),
     })
 }
@@ -98,7 +108,10 @@ fn read_str(chars: &mut std::iter::Enumerate<std::str::Chars>) -> Result<Definit
     }
 }
 
-fn read_symbol(a: char, chars: &mut std::iter::Enumerate<std::str::Chars>) -> Result<DefinitionTypes, Error> {
+fn read_symbol(
+    a: char,
+    chars: &mut std::iter::Enumerate<std::str::Chars>,
+) -> Result<DefinitionTypes, Error> {
     let c_len = chars
         .clone()
         .enumerate()
@@ -126,7 +139,10 @@ fn read_symbol(a: char, chars: &mut std::iter::Enumerate<std::str::Chars>) -> Re
 }
 
 // TODO
-fn read_number(n: char, chars: &mut std::iter::Enumerate<std::str::Chars>) -> Result<DefinitionTypes, Error> {
+fn read_number(
+    n: char,
+    chars: &mut std::iter::Enumerate<std::str::Chars>,
+) -> Result<DefinitionTypes, Error> {
     let i = chars
         .clone()
         .next()
@@ -134,7 +150,7 @@ fn read_number(n: char, chars: &mut std::iter::Enumerate<std::str::Chars>) -> Re
         .0;
     let c_len = chars
         .clone()
-        .take_while(|c| c.1.is_numeric() || c.1 == '.' || c.1 == '/' || c.1 == 'f' || c.1 == 'i' || c.1 == 'u')
+        .take_while(|c| c.1.is_numeric() || c.1 == '.' || c.1 == '/')
         .count();
     let mut number = String::new();
     let string = chars.take(c_len).map(|c| c.1).collect::<String>();
@@ -142,23 +158,15 @@ fn read_number(n: char, chars: &mut std::iter::Enumerate<std::str::Chars>) -> Re
     number.push_str(&string);
 
     match number {
-        n if n.contains('/') && n.split('/').all(|d| d.parse::<f64>().is_ok()) => {
+        n if n.contains('/') && n.split('/').all(|d| d.parse::<BigInt>().is_ok()) => {
             let split = n.split('/').collect::<Vec<_>>();
-            Ok(DefinitionTypes::Rational(split[0].parse::<i128>()?, split[1].parse::<u128>()?))
+            Ok(DefinitionTypes::Rational(
+                split[0].parse::<BigInt>()?,
+                split[1].parse::<BigInt>()?,
+            ))
         }
-        n if n.contains("f32") => Ok(DefinitionTypes::Float(OrderedFloat::from_str(&n)?)),
-        n if n.contains("f64") => Ok(DefinitionTypes::Double(OrderedFloat::from_str(&n)?)),
         n if n.contains('.') => Ok(DefinitionTypes::Double(OrderedFloat::from_str(&n)?)),
-        n if n.contains("i128") => Ok(DefinitionTypes::Long(n.parse()?)),
-        n if n.contains("u128") => Ok(DefinitionTypes::UnsignedLong(n.parse()?)),
-        n if n.contains("i64") => Ok(DefinitionTypes::Int(n.parse()?)),
-        n if n.contains("u64") => Ok(DefinitionTypes::UnsignedInt(n.parse()?)),
-        n if n.contains("i32") => Ok(DefinitionTypes::Short(n.parse()?)),
-        n if n.contains("u32") => Ok(DefinitionTypes::UnsignedShort(n.parse()?)),
-        n if n.contains("i8") => Ok(DefinitionTypes::SignedByte(n.parse()?)),
-        n if n.contains("u8") => Ok(DefinitionTypes::Byte(n.parse()?)),
-        n if n.parse::<i128>().is_ok() => Ok(DefinitionTypes::Long(n.parse()?)),
-        n if n.parse::<u128>().is_ok() => Ok(DefinitionTypes::UnsignedLong(n.parse()?)),
+        n if n.parse::<BigInt>().is_ok() => Ok(DefinitionTypes::Int(n.parse::<BigInt>().unwrap())),
         n if n.parse::<f64>().is_ok() => Ok(DefinitionTypes::Double(n.parse()?)),
 
         _ => Err(Error::Reason(format!(

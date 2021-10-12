@@ -1,0 +1,34 @@
+use num_bigint::ParseBigIntError;
+
+#[derive(Debug)]
+pub enum Error {
+    Reason(String),
+    ArityException(u16, String),
+    UnknownSymbol,
+    CantEval(Option<String>),
+    IntParseError,
+}
+
+impl From<std::num::ParseIntError> for Error {
+    fn from(s: std::num::ParseIntError) -> Self {
+        Error::Reason(s.to_string())
+    }
+}
+
+impl From<ParseBigIntError> for Error {
+    fn from(s: ParseBigIntError) -> Self {
+        Error::Reason(s.to_string())
+    }
+}
+
+impl From<std::num::ParseFloatError> for Error {
+    fn from(s: std::num::ParseFloatError) -> Self {
+        Error::Reason(s.to_string())
+    }
+}
+
+impl From<std::str::ParseBoolError> for Error {
+    fn from(s: std::str::ParseBoolError) -> Self {
+        Error::Reason(s.to_string())
+    }
+}

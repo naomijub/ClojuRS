@@ -1,35 +1,34 @@
-use std::{cmp::Ordering, collections::{BTreeMap, BTreeSet, HashMap, HashSet}, fmt::Display, hash::Hash};
+use std::{
+    cmp::Ordering,
+    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
+    fmt::Display,
+    hash::Hash,
+};
 
+use num_bigint::BigInt;
+use num_traits::ToPrimitive;
 use ordered_float::OrderedFloat;
 
-use crate::{Env, funtions::eval_list};
+use crate::{error::Error, funtions::eval_list, Env};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DefinitionTypes {
-  Symbol(String),
-  Keyword(String),
-  String(String),
-  Char(char),
-  Bool(bool),
-  Double(OrderedFloat<f64>),
-  Float(OrderedFloat<f32>),
-  UnsignedLong(u128),
-  Long(i128),
-  UnsignedInt(u64),
-  Int(i64),
-  UnsignedShort(u32),
-  Short(i32),
-  Byte(u8),
-  SignedByte(i8),
-  Rational(i128, u128),
-  HashSet(HashSet<DefinitionTypes>),
-  OrderedSet(BTreeSet<DefinitionTypes>),
-  HashMap(HashMap<DefinitionTypes, DefinitionTypes>),
-  OrderedMap(BTreeMap<DefinitionTypes,DefinitionTypes>),
-  List(Vec<DefinitionTypes>),
-  Vector(Vec<DefinitionTypes>),
-  Nil,
-} 
+    Symbol(String),
+    Keyword(String),
+    String(String),
+    Char(char),
+    Bool(bool),
+    Double(OrderedFloat<f64>),
+    Int(BigInt),
+    Rational(BigInt, BigInt),
+    HashSet(HashSet<DefinitionTypes>),
+    OrderedSet(BTreeSet<DefinitionTypes>),
+    HashMap(HashMap<DefinitionTypes, DefinitionTypes>),
+    OrderedMap(BTreeMap<DefinitionTypes, DefinitionTypes>),
+    List(Vec<DefinitionTypes>),
+    Vector(Vec<DefinitionTypes>),
+    Nil,
+}
 
 impl Hash for DefinitionTypes {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
@@ -37,16 +36,17 @@ impl Hash for DefinitionTypes {
             DefinitionTypes::HashSet(set) => {
                 let set = set.into_iter().collect::<Vec<&DefinitionTypes>>();
                 state.write(format!("HS={:?}", set).as_bytes())
-            },
+            }
             DefinitionTypes::HashMap(map) => {
-                let mut map = map.into_iter().collect::<Vec<(&DefinitionTypes, &DefinitionTypes)>>();
+                let mut map = map
+                    .into_iter()
+                    .collect::<Vec<(&DefinitionTypes, &DefinitionTypes)>>();
                 map.sort();
                 state.write(format!("HM={:?}", map).as_bytes())
-            },
-            _ => state.write(format!("{:?}", self).as_bytes())
-
+            }
+            _ => state.write(format!("{:?}", self).as_bytes()),
         }
-        
+
         state.finish();
     }
 }
@@ -59,13 +59,15 @@ impl Display for DefinitionTypes {
             DefinitionTypes::HashSet(set) => {
                 let set = set.into_iter().collect::<Vec<&DefinitionTypes>>();
                 write!(f, "HS={:?}", set)
-            },
+            }
             DefinitionTypes::HashMap(map) => {
-                let mut map = map.into_iter().collect::<Vec<(&DefinitionTypes, &DefinitionTypes)>>();
+                let mut map = map
+                    .into_iter()
+                    .collect::<Vec<(&DefinitionTypes, &DefinitionTypes)>>();
                 map.sort();
                 write!(f, "HM={:?}", map)
-            },
-            _ => write!(f, "{:?}", self)
+            }
+            _ => write!(f, "{:?}", self),
         }
     }
 }
@@ -86,32 +88,6 @@ impl PartialOrd for DefinitionTypes {
     }
 }
 
-#[derive(Debug)]
-pub enum Error {
-    Reason(String),
-    ArityException(u16, String),
-    UnknownSymbol,
-    CantEval(Option<String>)
-}
-
-impl From<std::num::ParseIntError> for Error {
-    fn from(s: std::num::ParseIntError) -> Self {
-        Error::Reason(s.to_string())
-    }
-}
-
-impl From<std::num::ParseFloatError> for Error {
-    fn from(s: std::num::ParseFloatError) -> Self {
-        Error::Reason(s.to_string())
-    }
-}
-
-impl From<std::str::ParseBoolError> for Error {
-    fn from(s: std::str::ParseBoolError) -> Self {
-        Error::Reason(s.to_string())
-    }
-}
-
 impl DefinitionTypes {
     pub fn print(&self, env: &mut Env) -> Result<String, Error> {
         let res = match self.clone() {
@@ -121,15 +97,7 @@ impl DefinitionTypes {
             DefinitionTypes::Char(el) => format!("\\{}", el),
             DefinitionTypes::Bool(el) => format!("{}", el),
             DefinitionTypes::Double(el) => format!("{}", el.0),
-            DefinitionTypes::Float(el) => format!("{}", el.0),
-            DefinitionTypes::UnsignedLong(el) => format!("{}", el),
-            DefinitionTypes::Long(el) => format!("{}", el),
-            DefinitionTypes::UnsignedInt(el) => format!("{}", el),
             DefinitionTypes::Int(el) => format!("{}", el),
-            DefinitionTypes::UnsignedShort(el) => format!("{}", el),
-            DefinitionTypes::Short(el) => format!("{}", el),
-            DefinitionTypes::Byte(el) => format!("{}", el),
-            DefinitionTypes::SignedByte(el) => format!("{}", el),
             DefinitionTypes::Rational(num, den) => format!("{}/{}", num, den),
             DefinitionTypes::Nil => format!("nil",),
 
@@ -141,7 +109,7 @@ impl DefinitionTypes {
                 }
                 s.push('}');
                 s
-            },
+            }
             DefinitionTypes::OrderedSet(set) => {
                 let mut s = String::from("#{");
                 for el in set {
@@ -150,7 +118,7 @@ impl DefinitionTypes {
                 }
                 s.push('}');
                 s
-            },
+            }
             DefinitionTypes::Vector(vec) => {
                 let mut s = String::from('[');
                 for el in vec {
@@ -159,7 +127,7 @@ impl DefinitionTypes {
                 }
                 s.push(']');
                 s
-            },
+            }
             DefinitionTypes::HashMap(map) => {
                 let mut s = String::from('{');
                 for (key, val) in map {
@@ -170,7 +138,7 @@ impl DefinitionTypes {
                 }
                 s.push('}');
                 s
-            },
+            }
             DefinitionTypes::OrderedMap(map) => {
                 let mut s = String::from('{');
                 for (key, val) in map {
@@ -181,11 +149,153 @@ impl DefinitionTypes {
                 }
                 s.push('}');
                 s
-            },
-            DefinitionTypes::List(mut list) => eval_list(&mut list, env)?, 
+            }
+            DefinitionTypes::List(mut list) => eval_list(&mut list, env)?,
         };
 
         Ok(res)
     }
+}
 
+use std::ops;
+
+impl ops::Add for DefinitionTypes {
+    type Output = Result<Self, Error>;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        let res = match self {
+            DefinitionTypes::Symbol(_) => todo!(),
+            DefinitionTypes::Keyword(_) => Err(Error::CantEval(Some(String::from(
+                "Can't eval add of keyword",
+            )))),
+            DefinitionTypes::String(s) => {
+                if let DefinitionTypes::String(rhs_s) = rhs {
+                    let s = String::new() + &s + &rhs_s;
+                    Ok(DefinitionTypes::String(s))
+                } else {
+                    Err(Error::CantEval(Some(String::from(
+                        "Can't add non-string to string using `+`",
+                    ))))
+                }
+            }
+            DefinitionTypes::Char(_) => Err(Error::CantEval(Some(String::from(
+                "Can't eval add of char",
+            )))),
+            DefinitionTypes::Bool(_) => Err(Error::CantEval(Some(String::from(
+                "Can't eval add of bool",
+            )))),
+            DefinitionTypes::Double(num) => match rhs {
+                DefinitionTypes::Double(rhs_num) => Ok(DefinitionTypes::Double(num + rhs_num)),
+                DefinitionTypes::Int(rhs_num) => Ok(DefinitionTypes::Double(
+                    (num.0 + rhs_num.to_f64().ok_or_else(|| Error::IntParseError)?).into(),
+                )),
+                DefinitionTypes::Rational(rhs_num, rhs_den) => Ok(DefinitionTypes::Double(
+                    (num.0
+                        + (rhs_num.to_f64().ok_or_else(|| Error::IntParseError)?
+                            / rhs_den.to_f64().ok_or_else(|| Error::IntParseError)?))
+                    .into(),
+                )),
+                DefinitionTypes::Nil => Ok(DefinitionTypes::Nil),
+                _ => Err(Error::CantEval(Some(String::from(
+                    "Can't add non-numeric to numeric using `+`",
+                )))),
+            },
+            DefinitionTypes::Int(num) => match rhs {
+                DefinitionTypes::Double(rhs_num) => Ok(DefinitionTypes::Double(
+                    (num.to_f64().ok_or_else(|| Error::IntParseError)? + rhs_num.0).into(),
+                )),
+                DefinitionTypes::Int(rhs_num) => Ok(DefinitionTypes::Int(num + rhs_num)),
+                DefinitionTypes::Rational(rhs_num, rhs_den) => {
+                    Ok(DefinitionTypes::Rational(rhs_num + num, rhs_den))
+                }
+                DefinitionTypes::Nil => Ok(DefinitionTypes::Nil),
+                _ => Err(Error::CantEval(Some(String::from(
+                    "Can't add non-numeric to numeric using `+`",
+                )))),
+            },
+            DefinitionTypes::Rational(num, den) => match rhs {
+                DefinitionTypes::Double(rhs_num) => Ok(DefinitionTypes::Double(
+                    ((num.to_f64().ok_or_else(|| Error::IntParseError)?
+                        / den.to_f64().ok_or_else(|| Error::IntParseError)?)
+                        + rhs_num.0)
+                        .into(),
+                )),
+                DefinitionTypes::Int(rhs_num) => Ok(DefinitionTypes::Rational(rhs_num + num, den)),
+                DefinitionTypes::Rational(rhs_num, rhs_den) => Ok(DefinitionTypes::Rational(
+                    (rhs_num * den.clone()) + (num * rhs_den.clone()),
+                    rhs_den * den,
+                )),
+                DefinitionTypes::Nil => Ok(DefinitionTypes::Nil),
+                _ => Err(Error::CantEval(Some(String::from(
+                    "Can't add non-numeric to numeric using `+`",
+                )))),
+            },
+            DefinitionTypes::HashSet(v) => {
+                if let DefinitionTypes::HashSet(rhs_v) = rhs {
+                    let mut v = v.clone();
+                    for k in rhs_v {
+                        v.insert(k);
+                    }
+                    Ok(DefinitionTypes::HashSet(v))
+                } else {
+                    Err(Error::CantEval(Some(String::from(
+                        "Can't add non-ordered-map to ordered-map using `+`",
+                    ))))
+                }
+            }
+            DefinitionTypes::OrderedSet(v) => {
+                if let DefinitionTypes::OrderedSet(rhs_v) = rhs {
+                    let mut v = v.clone();
+                    let mut rhs_v = rhs_v.clone();
+                    v.append(&mut rhs_v);
+                    Ok(DefinitionTypes::OrderedSet(v))
+                } else {
+                    Err(Error::CantEval(Some(String::from(
+                        "Can't add non-ordered-map to ordered-map using `+`",
+                    ))))
+                }
+            }
+            DefinitionTypes::HashMap(v) => {
+                if let DefinitionTypes::HashMap(rhs_v) = rhs {
+                    let mut v = v.clone();
+                    for (k, val) in rhs_v {
+                        v.insert(k, val);
+                    }
+                    Ok(DefinitionTypes::HashMap(v))
+                } else {
+                    Err(Error::CantEval(Some(String::from(
+                        "Can't add non-hash-map to hash-map using `+`",
+                    ))))
+                }
+            }
+            DefinitionTypes::OrderedMap(v) => {
+                if let DefinitionTypes::OrderedMap(rhs_v) = rhs {
+                    let mut v = v.clone();
+                    let mut rhs_v = rhs_v.clone();
+                    v.append(&mut rhs_v);
+                    Ok(DefinitionTypes::OrderedMap(v))
+                } else {
+                    Err(Error::CantEval(Some(String::from(
+                        "Can't add non-ordered-map to ordered-map using `+`",
+                    ))))
+                }
+            }
+            DefinitionTypes::List(_) => todo!("eval list not implemented"),
+            DefinitionTypes::Vector(v) => {
+                if let DefinitionTypes::Vector(rhs_v) = rhs {
+                    let mut v = v.clone();
+                    let mut rhs_v = rhs_v.clone();
+                    v.append(&mut rhs_v);
+                    Ok(DefinitionTypes::Vector(v))
+                } else {
+                    Err(Error::CantEval(Some(String::from(
+                        "Can't add non-vector to vector using `+`",
+                    ))))
+                }
+            }
+            DefinitionTypes::Nil => Ok(DefinitionTypes::Nil),
+        }?;
+
+        Ok(res)
+    }
 }
