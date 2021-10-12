@@ -1,8 +1,15 @@
-use crate::{Env, definitions::{DefinitionTypes, Error}};
+use num_bigint::ToBigInt;
+
+use crate::{definitions::DefinitionTypes, error::Error, Env};
+pub mod math;
 
 pub type Func = fn(&[DefinitionTypes]) -> Result<DefinitionTypes, Error>;
 
 pub fn eval_list(list: &mut Vec<DefinitionTypes>, env: &mut Env) -> Result<String, Error> {
+    if list.is_empty() {
+        return Ok(String::from("()"));
+    }
+
     let mut list = list.into_iter();
     let next = list.next();
     if let Some(DefinitionTypes::Symbol(symbol)) = next {
@@ -14,10 +21,8 @@ pub fn eval_list(list: &mut Vec<DefinitionTypes>, env: &mut Env) -> Result<Strin
     }
 }
 
-pub fn plus(list: &[DefinitionTypes]) -> Result<DefinitionTypes, Error> {
-    Ok(DefinitionTypes::Int(42))
-}
-
 pub fn meaning_of_life(_: &[DefinitionTypes]) -> Result<DefinitionTypes, Error> {
-    Ok(DefinitionTypes::Int(42))
+    Ok(DefinitionTypes::Int(
+        42.to_bigint().ok_or_else(|| Error::IntParseError)?,
+    ))
 }
