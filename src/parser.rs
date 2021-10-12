@@ -138,7 +138,6 @@ fn read_symbol(
     Ok(DefinitionTypes::Symbol(symbol))
 }
 
-// TODO
 fn read_number(
     n: char,
     chars: &mut std::iter::Enumerate<std::str::Chars>,
@@ -148,10 +147,15 @@ fn read_number(
         .next()
         .ok_or_else(|| Error::Reason("Could not identify symbol index".to_string()))?
         .0;
-    let c_len = chars
+
+        let c_len = chars
         .clone()
         .take_while(|c| c.1.is_numeric() || c.1 == '.' || c.1 == '/')
         .count();
+    if n == '-' && c_len == 0 {
+        return Ok(DefinitionTypes::Symbol("-".to_string()));
+    }
+
     let mut number = String::new();
     let string = chars.take(c_len).map(|c| c.1).collect::<String>();
     number.push(n);

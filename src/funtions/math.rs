@@ -95,3 +95,15 @@ pub fn plus(list: &[DefinitionTypes]) -> Result<DefinitionTypes, Error> {
             acc + e.clone()
         })
 }
+
+pub fn sub(list: &[DefinitionTypes]) -> Result<DefinitionTypes, Error> {
+    if let Some((first, rest)) = list.split_first() {
+        rest.iter()
+        .try_fold(first.to_owned(), |acc, e| {
+            acc - e.to_owned()
+        })
+    } else {
+        Err(Error::Reason(String::from("Couldn't parse form content")))
+    }
+    
+}
