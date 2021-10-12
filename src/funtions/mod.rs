@@ -1,11 +1,11 @@
 use num_bigint::ToBigInt;
 
-use crate::{definitions::DefinitionTypes, error::Error, Env};
+use crate::{definitions::DefinitionTypes, error::Error, STD};
 pub mod math;
 
 pub type Func = fn(&[DefinitionTypes]) -> Result<DefinitionTypes, Error>;
 
-pub fn eval_list(list: &mut Vec<DefinitionTypes>, env: &mut Env) -> Result<String, Error> {
+pub fn eval_list(list: &mut Vec<DefinitionTypes>) -> Result<String, Error> {
     if list.is_empty() {
         return Ok(String::from("()"));
     }
@@ -14,9 +14,9 @@ pub fn eval_list(list: &mut Vec<DefinitionTypes>, env: &mut Env) -> Result<Strin
     let next = list.next();
     if let Some(DefinitionTypes::Symbol(symbol)) = next {
         let rest: Vec<DefinitionTypes> = list.map(|e| e.clone()).collect();
-        env.func.get(symbol).ok_or_else(|| Error::UnknownSymbol)?(&rest)?.print(env)
+        STD.get(symbol).ok_or_else(|| Error::UnknownSymbol(symbol.to_string()))?(&rest)?.print()
     } else {
-        let next = next.map(|e| e.print(env).unwrap_or(String::new()));
+        let next = next.map(|e| e.print().unwrap_or(String::new()));
         Err(Error::CantEval(next))
     }
 }

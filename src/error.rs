@@ -4,7 +4,7 @@ use num_bigint::ParseBigIntError;
 pub enum Error {
     Reason(String),
     ArityException(u16, String),
-    UnknownSymbol,
+    UnknownSymbol(String),
     CantEval(Option<String>),
     IntParseError,
 }
