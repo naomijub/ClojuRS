@@ -4,7 +4,7 @@ extern crate lazy_static;
 
 use std::sync::Mutex;
 
-use definitions::DefinitionTypes;
+use definitions::DefinitionTypes as T;
 use error::Error;
 use funtions::Func;
 use helper::MaybeReplaceExt;
@@ -33,7 +33,7 @@ lazy_static! {
         String::from("num?") => is_numeric as Func,
     };
     pub static ref LOCAL: Mutex<Hamt<String, Func>> = Mutex::new(Hamt::new());
-    pub static ref DATA: Mutex<Hamt<String, DefinitionTypes>> = Mutex::new(Hamt::new());
+    pub static ref DATA: Mutex<Hamt<String, T>> = Mutex::new(Hamt::new());
 }
 
 pub fn read(list: &str) -> Result<String, Error> {
