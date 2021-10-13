@@ -97,12 +97,18 @@ impl PartialEq for DefinitionTypes {
             (Self::Char(l0), Self::Char(r0)) => l0 == r0,
             (Self::Bool(l0), Self::Bool(r0)) => l0 == r0,
             (Self::Double(l0), Self::Double(r0)) => l0 == r0,
-            (Self::Double(r0), Self::Rational(l0, l1)) => &OrderedFloat::from(l0.to_f64().unwrap_or_default()/l1.to_f64().unwrap_or(1f64)) == r0,
+            (Self::Double(r0), Self::Rational(l0, l1)) => {
+                &OrderedFloat::from(l0.to_f64().unwrap_or_default() / l1.to_f64().unwrap_or(1f64))
+                    == r0
+            }
             (Self::Int(l0), Self::Int(r0)) => l0 == r0,
-            (Self::Int(r0), Self::Rational(l0, l1)) => l0/l1 == *r0 && l0 % l1 == BigInt::zero(),
+            (Self::Int(r0), Self::Rational(l0, l1)) => l0 / l1 == *r0 && l0 % l1 == BigInt::zero(),
             (Self::Rational(l0, l1), Self::Rational(r0, r1)) => l0 == r0 && l1 == r1,
-            (Self::Rational(l0, l1), Self::Double(r0)) => &OrderedFloat::from(l0.to_f64().unwrap_or_default()/l1.to_f64().unwrap_or(1f64)) == r0,
-            (Self::Rational(l0, l1), Self::Int(r0)) => l0/l1 == *r0 && l0 % l1 == BigInt::zero(),
+            (Self::Rational(l0, l1), Self::Double(r0)) => {
+                &OrderedFloat::from(l0.to_f64().unwrap_or_default() / l1.to_f64().unwrap_or(1f64))
+                    == r0
+            }
+            (Self::Rational(l0, l1), Self::Int(r0)) => l0 / l1 == *r0 && l0 % l1 == BigInt::zero(),
             (Self::HashSet(l0), Self::HashSet(r0)) => l0 == r0,
             (Self::OrderedSet(l0), Self::OrderedSet(r0)) => l0 == r0,
             (Self::HashMap(l0), Self::HashMap(r0)) => l0 == r0,
@@ -215,12 +221,12 @@ impl ops::Add for DefinitionTypes {
             DefinitionTypes::Double(num) => match rhs {
                 DefinitionTypes::Double(rhs_num) => Ok(DefinitionTypes::Double(num + rhs_num)),
                 DefinitionTypes::Int(rhs_num) => Ok(DefinitionTypes::Double(
-                    (num.0 + rhs_num.to_f64().ok_or( Error::IntParseError)?).into(),
+                    (num.0 + rhs_num.to_f64().ok_or(Error::IntParseError)?).into(),
                 )),
                 DefinitionTypes::Rational(rhs_num, rhs_den) => Ok(DefinitionTypes::Double(
-                    (((num.0 * rhs_den.to_f64().ok_or( Error::IntParseError)?)
-                        + rhs_num.to_f64().ok_or( Error::IntParseError)?)
-                        / rhs_den.to_f64().ok_or( Error::IntParseError)?)
+                    (((num.0 * rhs_den.to_f64().ok_or(Error::IntParseError)?)
+                        + rhs_num.to_f64().ok_or(Error::IntParseError)?)
+                        / rhs_den.to_f64().ok_or(Error::IntParseError)?)
                     .into(),
                 )),
                 DefinitionTypes::Nil => Ok(DefinitionTypes::Nil),
@@ -230,7 +236,7 @@ impl ops::Add for DefinitionTypes {
             },
             DefinitionTypes::Int(num) => match rhs {
                 DefinitionTypes::Double(rhs_num) => Ok(DefinitionTypes::Double(
-                    (num.to_f64().ok_or( Error::IntParseError)? + rhs_num.0).into(),
+                    (num.to_f64().ok_or(Error::IntParseError)? + rhs_num.0).into(),
                 )),
                 DefinitionTypes::Int(rhs_num) => Ok(DefinitionTypes::Int(num + rhs_num)),
                 DefinitionTypes::Rational(rhs_num, rhs_den) => Ok(DefinitionTypes::Rational(
@@ -244,8 +250,8 @@ impl ops::Add for DefinitionTypes {
             },
             DefinitionTypes::Rational(num, den) => match rhs {
                 DefinitionTypes::Double(rhs_num) => Ok(DefinitionTypes::Double(
-                    ((num.to_f64().ok_or( Error::IntParseError)?
-                        / den.to_f64().ok_or( Error::IntParseError)?)
+                    ((num.to_f64().ok_or(Error::IntParseError)?
+                        / den.to_f64().ok_or(Error::IntParseError)?)
                         + rhs_num.0)
                         .into(),
                 )),
