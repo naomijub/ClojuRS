@@ -14,6 +14,8 @@ fn is_positive_number() {
     assert_eq!(read("(pos? -42.0)").unwrap(), "false");
     assert_eq!(read("(pos? -42/4)").unwrap(), "false");
     assert_eq!(read("(pos? 0)").unwrap(), "false");
+    assert_eq!(read("(pos? (- 1/3 4/5))").unwrap(), "false");
+    assert_eq!(read("(pos? (+ 1/3 4/5))").unwrap(), "true");
 }
 
 #[test]
@@ -25,6 +27,8 @@ fn is_negative_number() {
     assert_eq!(read("(neg? 42.0)").unwrap(), "false");
     assert_eq!(read("(neg? 42/4)").unwrap(), "false");
     assert_eq!(read("(neg? 0)").unwrap(), "false");
+    assert_eq!(read("(neg? (- 1/3 4/5))").unwrap(), "true");
+    assert_eq!(read("(neg? (+ 1/3 4/5))").unwrap(), "false");
 }
 
 #[test]

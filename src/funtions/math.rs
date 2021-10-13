@@ -21,8 +21,16 @@ pub fn is_numeric(list: &[DefinitionTypes]) -> Result<DefinitionTypes, Error> {
                 }
             }
             DefinitionTypes::List(mut l) => {
-                eval_list(&mut l).map(|op| op.parse::<BigInt>()).is_ok()
-                    || eval_list(&mut l).map(|op| op.parse::<f64>()).is_ok()
+                let eval = eval_list(&mut l);
+                eval.clone().map(|op| op.parse::<BigInt>()).is_ok()
+                    || eval.clone().map(|op| op.parse::<f64>()).is_ok()
+                    || eval
+                        .map(|op| {
+                            op.split('/').all(|num| {
+                                num.parse::<BigInt>().is_ok() || num.parse::<f64>().is_ok()
+                            })
+                        })
+                        .unwrap_or(false)
             }
             DefinitionTypes::Double(_)
             | DefinitionTypes::Int(_)
@@ -53,7 +61,20 @@ pub fn is_positive(list: &[DefinitionTypes]) -> Result<DefinitionTypes, Error> {
             DefinitionTypes::List(mut l) => {
                 let eval = eval_list(&mut l).unwrap_or_default();
 
-                if eval.parse::<BigInt>().is_ok() {
+                if eval.contains('/')
+                    && eval
+                        .split('/')
+                        .all(|num| num.parse::<BigInt>().is_ok() || num.parse::<f64>().is_ok())
+                {
+                    let split = eval.split('/');
+                    split
+                        .clone()
+                        .filter_map(|num| num.parse::<BigInt>().ok())
+                        .all(|num| num > BigInt::zero())
+                        || split
+                            .filter_map(|num| num.parse::<f64>().ok())
+                            .all(|num| num > 0.0)
+                } else if eval.parse::<BigInt>().is_ok() {
                     eval.parse::<BigInt>().unwrap() > BigInt::zero()
                 } else if eval.parse::<f64>().is_ok() {
                     eval.parse::<f64>().unwrap() > 0.0
@@ -67,6 +88,7 @@ pub fn is_positive(list: &[DefinitionTypes]) -> Result<DefinitionTypes, Error> {
 }
 
 pub fn is_negative(list: &[DefinitionTypes]) -> Result<DefinitionTypes, Error> {
+    println!("{:?}", list);
     Ok(DefinitionTypes::Bool(list.iter().all(
         |e| match e.clone() {
             DefinitionTypes::Symbol(symbol) => {
@@ -87,7 +109,20 @@ pub fn is_negative(list: &[DefinitionTypes]) -> Result<DefinitionTypes, Error> {
             DefinitionTypes::List(mut l) => {
                 let eval = eval_list(&mut l).unwrap_or_default();
 
-                if eval.parse::<BigInt>().is_ok() {
+                if eval.contains('/')
+                    && eval
+                        .split('/')
+                        .all(|num| num.parse::<BigInt>().is_ok() || num.parse::<f64>().is_ok())
+                {
+                    let split = eval.split('/');
+                    split
+                        .clone()
+                        .filter_map(|num| num.parse::<BigInt>().ok())
+                        .any(|num| num < BigInt::zero())
+                        || split
+                            .filter_map(|num| num.parse::<f64>().ok())
+                            .any(|num| num < 0.0)
+                } else if eval.parse::<BigInt>().is_ok() {
                     eval.parse::<BigInt>().unwrap() < BigInt::zero()
                 } else if eval.parse::<f64>().is_ok() {
                     eval.parse::<f64>().unwrap() < 0.0

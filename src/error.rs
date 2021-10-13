@@ -1,6 +1,6 @@
 use num_bigint::ParseBigIntError;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Error {
     Reason(String),
     ArityException(u16, String),
