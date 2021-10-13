@@ -6,12 +6,12 @@ use std::{
 };
 
 use num_bigint::BigInt;
-use num_traits::ToPrimitive;
+use num_traits::{ToPrimitive, Zero};
 use ordered_float::OrderedFloat;
 
 use crate::{error::Error, funtions::eval_list};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Eq)]
 pub enum DefinitionTypes {
     Symbol(String),
     Keyword(String),
@@ -34,12 +34,12 @@ impl Hash for DefinitionTypes {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         match self {
             DefinitionTypes::HashSet(set) => {
-                let set = set.into_iter().collect::<Vec<&DefinitionTypes>>();
+                let set = set.iter().collect::<Vec<&DefinitionTypes>>();
                 state.write(format!("HS={:?}", set).as_bytes())
             }
             DefinitionTypes::HashMap(map) => {
                 let mut map = map
-                    .into_iter()
+                    .iter()
                     .collect::<Vec<(&DefinitionTypes, &DefinitionTypes)>>();
                 map.sort();
                 state.write(format!("HM={:?}", map).as_bytes())
@@ -57,15 +57,15 @@ impl Display for DefinitionTypes {
             DefinitionTypes::Keyword(key) => write!(f, ":{}", key),
             DefinitionTypes::Rational(num, den) => write!(f, "{}/{}", num, den),
             DefinitionTypes::HashSet(set) => {
-                let set = set.into_iter().collect::<Vec<&DefinitionTypes>>();
-                write!(f, "HS={:?}", set)
+                let set = set.iter().collect::<Vec<&DefinitionTypes>>();
+                write!(f, "#{{0HS}}={:?}", set)
             }
             DefinitionTypes::HashMap(map) => {
                 let mut map = map
-                    .into_iter()
+                    .iter()
                     .collect::<Vec<(&DefinitionTypes, &DefinitionTypes)>>();
                 map.sort();
-                write!(f, "HM={:?}", map)
+                write!(f, "{{0HM}}={:?}", map)
             }
             _ => write!(f, "{:?}", self),
         }
@@ -88,24 +88,58 @@ impl PartialOrd for DefinitionTypes {
     }
 }
 
+impl PartialEq for DefinitionTypes {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Symbol(l0), Self::Symbol(r0)) => l0 == r0,
+            (Self::Keyword(l0), Self::Keyword(r0)) => l0 == r0,
+            (Self::String(l0), Self::String(r0)) => l0 == r0,
+            (Self::Char(l0), Self::Char(r0)) => l0 == r0,
+            (Self::Bool(l0), Self::Bool(r0)) => l0 == r0,
+            (Self::Double(l0), Self::Double(r0)) => l0 == r0,
+            (Self::Double(r0), Self::Rational(l0, l1)) => {
+                &OrderedFloat::from(l0.to_f64().unwrap_or_default() / l1.to_f64().unwrap_or(1f64))
+                    == r0
+            }
+            (Self::Int(l0), Self::Int(r0)) => l0 == r0,
+            (Self::Int(r0), Self::Rational(l0, l1)) => l0 / l1 == *r0 && l0 % l1 == BigInt::zero(),
+            (Self::Rational(l0, l1), Self::Rational(r0, r1)) => l0 == r0 && l1 == r1,
+            (Self::Rational(l0, l1), Self::Double(r0)) => {
+                &OrderedFloat::from(l0.to_f64().unwrap_or_default() / l1.to_f64().unwrap_or(1f64))
+                    == r0
+            }
+            (Self::Rational(l0, l1), Self::Int(r0)) => l0 / l1 == *r0 && l0 % l1 == BigInt::zero(),
+            (Self::HashSet(l0), Self::HashSet(r0)) => l0 == r0,
+            (Self::OrderedSet(l0), Self::OrderedSet(r0)) => l0 == r0,
+            (Self::HashMap(l0), Self::HashMap(r0)) => l0 == r0,
+            (Self::OrderedMap(l0), Self::OrderedMap(r0)) => l0 == r0,
+            (Self::List(l0), Self::List(r0)) => l0 == r0,
+            (Self::Vector(l0), Self::Vector(r0)) => l0 == r0,
+            (Self::Vector(l0), Self::List(r0)) => l0 == r0,
+            (Self::List(l0), Self::Vector(r0)) => l0 == r0,
+            _ => core::mem::discriminant(self) == core::mem::discriminant(other),
+        }
+    }
+}
+
 impl DefinitionTypes {
     pub fn print(&self) -> Result<String, Error> {
         let res = match self.clone() {
-            DefinitionTypes::Symbol(el) => format!("{}", el),
+            DefinitionTypes::Symbol(el) => el,
             DefinitionTypes::Keyword(el) => format!(":{}", el),
             DefinitionTypes::String(el) => format!("\"{}\"", el),
             DefinitionTypes::Char(el) => format!("\\{}", el),
-            DefinitionTypes::Bool(el) => format!("{}", el),
-            DefinitionTypes::Double(el) => format!("{}", el.0),
+            DefinitionTypes::Bool(el) => el.to_string(),
+            DefinitionTypes::Double(el) => el.0.to_string(),
             DefinitionTypes::Int(el) => format!("{}", el),
             DefinitionTypes::Rational(num, den) => format!("{}/{}", num, den),
-            DefinitionTypes::Nil => format!("nil",),
+            DefinitionTypes::Nil => "nil".to_owned(),
 
             DefinitionTypes::HashSet(set) => {
                 let mut s = String::from("#{");
                 for el in set {
                     s.push_str(&el.print()?);
-                    s.push_str(" ");
+                    s.push(' ');
                 }
                 s.push('}');
                 s
@@ -114,7 +148,7 @@ impl DefinitionTypes {
                 let mut s = String::from("#{");
                 for el in set {
                     s.push_str(&el.print()?);
-                    s.push_str(" ");
+                    s.push(' ');
                 }
                 s.push('}');
                 s
@@ -123,7 +157,7 @@ impl DefinitionTypes {
                 let mut s = String::from('[');
                 for el in vec {
                     s.push_str(&el.print()?);
-                    s.push_str(" ");
+                    s.push(' ');
                 }
                 s.push(']');
                 s
@@ -132,9 +166,9 @@ impl DefinitionTypes {
                 let mut s = String::from('{');
                 for (key, val) in map {
                     s.push_str(&key.print()?);
-                    s.push_str(" ");
+                    s.push(' ');
                     s.push_str(&val.print()?);
-                    s.push_str(" ");
+                    s.push(' ');
                 }
                 s.push('}');
                 s
@@ -143,9 +177,9 @@ impl DefinitionTypes {
                 let mut s = String::from('{');
                 for (key, val) in map {
                     s.push_str(&key.print()?);
-                    s.push_str(" ");
+                    s.push(' ');
                     s.push_str(&val.print()?);
-                    s.push_str(" ");
+                    s.push(' ');
                 }
                 s.push('}');
                 s
@@ -187,12 +221,12 @@ impl ops::Add for DefinitionTypes {
             DefinitionTypes::Double(num) => match rhs {
                 DefinitionTypes::Double(rhs_num) => Ok(DefinitionTypes::Double(num + rhs_num)),
                 DefinitionTypes::Int(rhs_num) => Ok(DefinitionTypes::Double(
-                    (num.0 + rhs_num.to_f64().ok_or_else(|| Error::IntParseError)?).into(),
+                    (num.0 + rhs_num.to_f64().ok_or(Error::IntParseError)?).into(),
                 )),
                 DefinitionTypes::Rational(rhs_num, rhs_den) => Ok(DefinitionTypes::Double(
-                    (((num.0 * rhs_den.to_f64().ok_or_else(|| Error::IntParseError)?)
-                        + rhs_num.to_f64().ok_or_else(|| Error::IntParseError)?)
-                        / rhs_den.to_f64().ok_or_else(|| Error::IntParseError)?)
+                    (((num.0 * rhs_den.to_f64().ok_or(Error::IntParseError)?)
+                        + rhs_num.to_f64().ok_or(Error::IntParseError)?)
+                        / rhs_den.to_f64().ok_or(Error::IntParseError)?)
                     .into(),
                 )),
                 DefinitionTypes::Nil => Ok(DefinitionTypes::Nil),
@@ -202,7 +236,7 @@ impl ops::Add for DefinitionTypes {
             },
             DefinitionTypes::Int(num) => match rhs {
                 DefinitionTypes::Double(rhs_num) => Ok(DefinitionTypes::Double(
-                    (num.to_f64().ok_or_else(|| Error::IntParseError)? + rhs_num.0).into(),
+                    (num.to_f64().ok_or(Error::IntParseError)? + rhs_num.0).into(),
                 )),
                 DefinitionTypes::Int(rhs_num) => Ok(DefinitionTypes::Int(num + rhs_num)),
                 DefinitionTypes::Rational(rhs_num, rhs_den) => Ok(DefinitionTypes::Rational(
@@ -216,8 +250,8 @@ impl ops::Add for DefinitionTypes {
             },
             DefinitionTypes::Rational(num, den) => match rhs {
                 DefinitionTypes::Double(rhs_num) => Ok(DefinitionTypes::Double(
-                    ((num.to_f64().ok_or_else(|| Error::IntParseError)?
-                        / den.to_f64().ok_or_else(|| Error::IntParseError)?)
+                    ((num.to_f64().ok_or(Error::IntParseError)?
+                        / den.to_f64().ok_or(Error::IntParseError)?)
                         + rhs_num.0)
                         .into(),
                 )),
@@ -225,7 +259,7 @@ impl ops::Add for DefinitionTypes {
                     Ok(DefinitionTypes::Rational(num + (rhs_num * &den), den))
                 }
                 DefinitionTypes::Rational(rhs_num, rhs_den) => Ok(DefinitionTypes::Rational(
-                    if &den != &rhs_den {
+                    if den != rhs_den {
                         (rhs_num * &den) + (num * &rhs_den)
                     } else {
                         rhs_num + num
@@ -239,7 +273,7 @@ impl ops::Add for DefinitionTypes {
             },
             DefinitionTypes::HashSet(v) => {
                 if let DefinitionTypes::HashSet(rhs_v) = rhs {
-                    let mut v = v.clone();
+                    let mut v = v;
                     for k in rhs_v {
                         v.insert(k);
                     }
@@ -252,8 +286,8 @@ impl ops::Add for DefinitionTypes {
             }
             DefinitionTypes::OrderedSet(v) => {
                 if let DefinitionTypes::OrderedSet(rhs_v) = rhs {
-                    let mut v = v.clone();
-                    let mut rhs_v = rhs_v.clone();
+                    let mut v = v;
+                    let mut rhs_v = rhs_v;
                     v.append(&mut rhs_v);
                     Ok(DefinitionTypes::OrderedSet(v))
                 } else {
@@ -264,7 +298,7 @@ impl ops::Add for DefinitionTypes {
             }
             DefinitionTypes::HashMap(v) => {
                 if let DefinitionTypes::HashMap(rhs_v) = rhs {
-                    let mut v = v.clone();
+                    let mut v = v;
                     for (k, val) in rhs_v {
                         v.insert(k, val);
                     }
@@ -277,8 +311,8 @@ impl ops::Add for DefinitionTypes {
             }
             DefinitionTypes::OrderedMap(v) => {
                 if let DefinitionTypes::OrderedMap(rhs_v) = rhs {
-                    let mut v = v.clone();
-                    let mut rhs_v = rhs_v.clone();
+                    let mut v = v;
+                    let mut rhs_v = rhs_v;
                     v.append(&mut rhs_v);
                     Ok(DefinitionTypes::OrderedMap(v))
                 } else {
@@ -290,8 +324,8 @@ impl ops::Add for DefinitionTypes {
             DefinitionTypes::List(_) => todo!("eval list not implemented"),
             DefinitionTypes::Vector(v) => {
                 if let DefinitionTypes::Vector(rhs_v) = rhs {
-                    let mut v = v.clone();
-                    let mut rhs_v = rhs_v.clone();
+                    let mut v = v;
+                    let mut rhs_v = rhs_v;
                     v.append(&mut rhs_v);
                     Ok(DefinitionTypes::Vector(v))
                 } else {
@@ -328,12 +362,12 @@ impl ops::Sub for DefinitionTypes {
             DefinitionTypes::Double(num) => match rhs {
                 DefinitionTypes::Double(rhs_num) => Ok(DefinitionTypes::Double(num - rhs_num)),
                 DefinitionTypes::Int(rhs_num) => Ok(DefinitionTypes::Double(
-                    (num.0 - rhs_num.to_f64().ok_or_else(|| Error::IntParseError)?).into(),
+                    (num.0 - rhs_num.to_f64().ok_or(Error::IntParseError)?).into(),
                 )),
                 DefinitionTypes::Rational(rhs_num, rhs_den) => Ok(DefinitionTypes::Double(
-                    (((num.0 * rhs_den.to_f64().ok_or_else(|| Error::IntParseError)?)
-                        - rhs_num.to_f64().ok_or_else(|| Error::IntParseError)?)
-                        / rhs_den.to_f64().ok_or_else(|| Error::IntParseError)?)
+                    (((num.0 * rhs_den.to_f64().ok_or(Error::IntParseError)?)
+                        - rhs_num.to_f64().ok_or(Error::IntParseError)?)
+                        / rhs_den.to_f64().ok_or(Error::IntParseError)?)
                     .into(),
                 )),
                 DefinitionTypes::Nil => Ok(DefinitionTypes::Nil),
@@ -343,7 +377,7 @@ impl ops::Sub for DefinitionTypes {
             },
             DefinitionTypes::Int(num) => match rhs {
                 DefinitionTypes::Double(rhs_num) => Ok(DefinitionTypes::Double(
-                    (num.to_f64().ok_or_else(|| Error::IntParseError)? - rhs_num.0).into(),
+                    (num.to_f64().ok_or(Error::IntParseError)? - rhs_num.0).into(),
                 )),
                 DefinitionTypes::Int(rhs_num) => Ok(DefinitionTypes::Int(num - rhs_num)),
                 DefinitionTypes::Rational(rhs_num, rhs_den) => Ok(DefinitionTypes::Rational(
@@ -357,8 +391,8 @@ impl ops::Sub for DefinitionTypes {
             },
             DefinitionTypes::Rational(num, den) => match rhs {
                 DefinitionTypes::Double(rhs_num) => Ok(DefinitionTypes::Double(
-                    ((num.to_f64().ok_or_else(|| Error::IntParseError)?
-                        / den.to_f64().ok_or_else(|| Error::IntParseError)?)
+                    ((num.to_f64().ok_or(Error::IntParseError)?
+                        / den.to_f64().ok_or(Error::IntParseError)?)
                         - rhs_num.0)
                         .into(),
                 )),
