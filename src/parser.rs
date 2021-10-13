@@ -6,7 +6,7 @@ use std::{
 use num_bigint::BigInt;
 use ordered_float::OrderedFloat;
 
-use crate::{definitions::DefinitionTypes, error::Error};
+use crate::{definitions::DefinitionTypes as T, error::Error};
 
 pub(crate) fn tokenize(exp: &str) -> std::iter::Enumerate<std::str::Chars> {
     exp.chars().enumerate()
@@ -15,7 +15,7 @@ pub(crate) fn tokenize(exp: &str) -> std::iter::Enumerate<std::str::Chars> {
 pub(crate) fn parse(
     c: Option<(usize, char)>,
     chars: &mut std::iter::Enumerate<std::str::Chars>,
-) -> Result<DefinitionTypes, Error> {
+) -> Result<T, Error> {
     Ok(match c {
         Some((_, '[')) => read_vec(chars)?,
         Some((_, '(')) => read_list(chars)?,
@@ -28,7 +28,7 @@ pub(crate) fn parse(
 pub(crate) fn parse_edn(
     c: Option<(usize, char)>,
     chars: &mut std::iter::Enumerate<std::str::Chars>,
-) -> Result<DefinitionTypes, Error> {
+) -> Result<T, Error> {
     match c {
         Some((_, '\"')) => read_str(chars),
         Some((_, ':')) => read_key_or_nsmap(chars),
@@ -41,9 +41,7 @@ pub(crate) fn parse_edn(
     }
 }
 
-fn read_key_or_nsmap(
-    chars: &mut std::iter::Enumerate<std::str::Chars>,
-) -> Result<DefinitionTypes, Error> {
+fn read_key_or_nsmap(chars: &mut std::iter::Enumerate<std::str::Chars>) -> Result<T, Error> {
     let mut key_chars = chars.clone().take_while(|c| {
         !c.1.is_whitespace() && c.1 != ',' && c.1 != ')' && c.1 != ']' && c.1 != '}'
     });
@@ -59,14 +57,14 @@ fn read_key_or_nsmap(
     })
 }
 
-fn read_key(chars: &mut std::iter::Enumerate<std::str::Chars>, c_len: usize) -> DefinitionTypes {
+fn read_key(chars: &mut std::iter::Enumerate<std::str::Chars>, c_len: usize) -> T {
     let mut key = String::from(":");
     let key_chars = chars.take(c_len).map(|c| c.1).collect::<String>();
     key.push_str(&key_chars);
-    DefinitionTypes::Keyword(key)
+    T::Keyword(key)
 }
 
-fn read_str(chars: &mut std::iter::Enumerate<std::str::Chars>) -> Result<DefinitionTypes, Error> {
+fn read_str(chars: &mut std::iter::Enumerate<std::str::Chars>) -> Result<T, Error> {
     let result = chars.try_fold(
         (false, String::new()),
         |(last_was_escape, mut s), (_, c)| {
@@ -104,14 +102,11 @@ fn read_str(chars: &mut std::iter::Enumerate<std::str::Chars>) -> Result<Definit
         // an error.
         Ok(_) => Err(Error::Reason("Unterminated string".to_string())),
         Err(Err(e)) => Err(e),
-        Err(Ok(string)) => Ok(DefinitionTypes::String(string)),
+        Err(Ok(string)) => Ok(T::String(string)),
     }
 }
 
-fn read_symbol(
-    a: char,
-    chars: &mut std::iter::Enumerate<std::str::Chars>,
-) -> Result<DefinitionTypes, Error> {
+fn read_symbol(a: char, chars: &mut std::iter::Enumerate<std::str::Chars>) -> Result<T, Error> {
     let c_len = chars
         .clone()
         .enumerate()
@@ -135,13 +130,10 @@ fn read_symbol(
     let mut symbol = String::from(a);
     let symbol_chars = chars.take(c_len).map(|c| c.1).collect::<String>();
     symbol.push_str(&symbol_chars);
-    Ok(DefinitionTypes::Symbol(symbol))
+    Ok(T::Symbol(symbol))
 }
 
-fn read_number(
-    n: char,
-    chars: &mut std::iter::Enumerate<std::str::Chars>,
-) -> Result<DefinitionTypes, Error> {
+fn read_number(n: char, chars: &mut std::iter::Enumerate<std::str::Chars>) -> Result<T, Error> {
     let i = chars
         .clone()
         .next()
@@ -153,7 +145,7 @@ fn read_number(
         .take_while(|c| c.1.is_numeric() || c.1 == '.' || c.1 == '/')
         .count();
     if n == '-' && c_len == 0 {
-        return Ok(DefinitionTypes::Symbol("-".to_string()));
+        return Ok(T::Symbol("-".to_string()));
     }
 
     let mut number = String::new();
@@ -164,14 +156,14 @@ fn read_number(
     match number {
         n if n.contains('/') && n.split('/').all(|d| d.parse::<BigInt>().is_ok()) => {
             let split = n.split('/').collect::<Vec<_>>();
-            Ok(DefinitionTypes::Rational(
+            Ok(T::Rational(
                 split[0].parse::<BigInt>()?,
                 split[1].parse::<BigInt>()?,
             ))
         }
-        n if n.contains('.') => Ok(DefinitionTypes::Double(OrderedFloat::from_str(&n)?)),
-        n if n.parse::<BigInt>().is_ok() => Ok(DefinitionTypes::Int(n.parse::<BigInt>().unwrap())),
-        n if n.parse::<f64>().is_ok() => Ok(DefinitionTypes::Double(n.parse()?)),
+        n if n.contains('.') => Ok(T::Double(OrderedFloat::from_str(&n)?)),
+        n if n.parse::<BigInt>().is_ok() => Ok(T::Int(n.parse::<BigInt>().unwrap())),
+        n if n.parse::<f64>().is_ok() => Ok(T::Double(n.parse()?)),
 
         _ => Err(Error::Reason(format!(
             "{} could not be parsed at char count {}",
@@ -180,7 +172,7 @@ fn read_number(
     }
 }
 
-fn read_char(chars: &mut std::iter::Enumerate<std::str::Chars>) -> Result<DefinitionTypes, Error> {
+fn read_char(chars: &mut std::iter::Enumerate<std::str::Chars>) -> Result<T, Error> {
     let i = chars
         .clone()
         .next()
@@ -189,14 +181,14 @@ fn read_char(chars: &mut std::iter::Enumerate<std::str::Chars>) -> Result<Defini
     let c = chars.next();
     c.ok_or(format!("{:?} could not be parsed at char count {}", c, i))
         .map(|c| c.1)
-        .map(DefinitionTypes::Char)
+        .map(T::Char)
         .map_err(Error::Reason)
 }
 
 fn read_bool_or_nil(
     c: char,
     chars: &mut std::iter::Enumerate<std::str::Chars>,
-) -> Result<DefinitionTypes, Error> {
+) -> Result<T, Error> {
     let i = chars
         .clone()
         .next()
@@ -217,7 +209,7 @@ fn read_bool_or_nil(
             let t = chars.take(3).map(|c| c.1).collect::<String>();
             string.push(c);
             string.push_str(&t);
-            Ok(DefinitionTypes::Bool(string.parse::<bool>()?))
+            Ok(T::Bool(string.parse::<bool>()?))
         }
         'f' if {
             let val = chars.clone().take(5).map(|c| c.1).collect::<String>();
@@ -233,7 +225,7 @@ fn read_bool_or_nil(
             let f = chars.take(4).map(|c| c.1).collect::<String>();
             string.push(c);
             string.push_str(&f);
-            Ok(DefinitionTypes::Bool(string.parse::<bool>()?))
+            Ok(T::Bool(string.parse::<bool>()?))
         }
         'n' if {
             let val = chars.clone().take(3).map(|c| c.1).collect::<String>();
@@ -250,7 +242,7 @@ fn read_bool_or_nil(
             string.push(c);
             string.push_str(&n);
             match &string[..] {
-                "nil" => Ok(DefinitionTypes::Nil),
+                "nil" => Ok(T::Nil),
                 _ => Err(Error::Reason(format!(
                     "{} could not be parsed at char count {}",
                     string, i
@@ -261,16 +253,16 @@ fn read_bool_or_nil(
     }
 }
 
-fn read_vec(chars: &mut std::iter::Enumerate<std::str::Chars>) -> Result<DefinitionTypes, Error> {
+fn read_vec(chars: &mut std::iter::Enumerate<std::str::Chars>) -> Result<T, Error> {
     let i = chars
         .clone()
         .next()
         .ok_or_else(|| Error::Reason("Could not identify symbol index".to_string()))?
         .0;
-    let mut res: Vec<DefinitionTypes> = vec![];
+    let mut res: Vec<T> = vec![];
     loop {
         match chars.next() {
-            Some((_, ']')) => return Ok(DefinitionTypes::Vector(res)),
+            Some((_, ']')) => return Ok(T::Vector(res)),
             Some(c) if !c.1.is_whitespace() && c.1 != ',' => {
                 res.push(parse(Some(c), chars)?);
             }
@@ -285,16 +277,16 @@ fn read_vec(chars: &mut std::iter::Enumerate<std::str::Chars>) -> Result<Definit
     }
 }
 
-fn read_list(chars: &mut std::iter::Enumerate<std::str::Chars>) -> Result<DefinitionTypes, Error> {
+fn read_list(chars: &mut std::iter::Enumerate<std::str::Chars>) -> Result<T, Error> {
     let i = chars
         .clone()
         .next()
         .ok_or_else(|| Error::Reason("Could not identify symbol index".to_string()))?
         .0;
-    let mut res: Vec<DefinitionTypes> = vec![];
+    let mut res: Vec<T> = vec![];
     loop {
         match chars.next() {
-            Some((_, ')')) => return Ok(DefinitionTypes::List(res)),
+            Some((_, ')')) => return Ok(T::List(res)),
             Some(c) if !c.1.is_whitespace() && c.1 != ',' => {
                 res.push(parse(Some(c), chars)?);
             }
@@ -309,16 +301,16 @@ fn read_list(chars: &mut std::iter::Enumerate<std::str::Chars>) -> Result<Defini
     }
 }
 
-fn read_set(chars: &mut std::iter::Enumerate<std::str::Chars>) -> Result<DefinitionTypes, Error> {
+fn read_set(chars: &mut std::iter::Enumerate<std::str::Chars>) -> Result<T, Error> {
     let i = chars
         .clone()
         .next()
         .ok_or_else(|| Error::Reason("Could not identify symbol index".to_string()))?
         .0;
-    let mut res: HashSet<DefinitionTypes> = HashSet::new();
+    let mut res: HashSet<T> = HashSet::new();
     loop {
         match chars.next() {
-            Some((_, '}')) => return Ok(DefinitionTypes::HashSet(res)),
+            Some((_, '}')) => return Ok(T::HashSet(res)),
             Some(c) if !c.1.is_whitespace() && c.1 != ',' => {
                 res.insert(parse(Some(c), chars)?);
             }
@@ -333,16 +325,16 @@ fn read_set(chars: &mut std::iter::Enumerate<std::str::Chars>) -> Result<Definit
     }
 }
 
-// fn read_namespaced_map(chars: &mut std::iter::Enumerate<std::str::Chars>) -> Result<DefinitionTypes, Error> {
+// fn read_namespaced_map(chars: &mut std::iter::Enumerate<std::str::Chars>) -> Result<T, Error> {
 //     let i = chars
 //         .clone()
 //         .next()
 //         .ok_or_else(|| Error::Reason("Could not identify symbol index".to_string()))?
 //         .0;
 //     use std::collections::BTreeMap;
-//     let mut res: BTreeMap<String, DefinitionTypes> = BTreeMap::new();
-//     let mut key: Option<DefinitionTypes> = None;
-//     let mut val: Option<DefinitionTypes> = None;
+//     let mut res: BTreeMap<String, T> = BTreeMap::new();
+//     let mut key: Option<T> = None;
+//     let mut val: Option<T> = None;
 //     let namespace = chars
 //         .take_while(|c| c.1 != '{')
 //         .map(|c| c.1)
@@ -350,7 +342,7 @@ fn read_set(chars: &mut std::iter::Enumerate<std::str::Chars>) -> Result<Definit
 
 //     loop {
 //         match chars.next() {
-//             Some((_, '}')) => return Ok(DefinitionTypes::NamespacedMap(namespace, res)),
+//             Some((_, '}')) => return Ok(T::NamespacedMap(namespace, res)),
 //             Some(c) if !c.1.is_whitespace() && c.1 != ',' => {
 //                 if key.is_some() {
 //                     val = Some(parse(Some(c), chars)?);
@@ -375,18 +367,18 @@ fn read_set(chars: &mut std::iter::Enumerate<std::str::Chars>) -> Result<Definit
 //     }
 // }
 
-fn read_map(chars: &mut std::iter::Enumerate<std::str::Chars>) -> Result<DefinitionTypes, Error> {
+fn read_map(chars: &mut std::iter::Enumerate<std::str::Chars>) -> Result<T, Error> {
     let i = chars
         .clone()
         .next()
         .ok_or_else(|| Error::Reason("Could not identify symbol index".to_string()))?
         .0;
-    let mut res: HashMap<DefinitionTypes, DefinitionTypes> = HashMap::new();
-    let mut key: Option<DefinitionTypes> = None;
-    let mut val: Option<DefinitionTypes> = None;
+    let mut res: HashMap<T, T> = HashMap::new();
+    let mut key: Option<T> = None;
+    let mut val: Option<T> = None;
     loop {
         match chars.next() {
-            Some((_, '}')) => return Ok(DefinitionTypes::HashMap(res)),
+            Some((_, '}')) => return Ok(T::HashMap(res)),
             Some(c) if !c.1.is_whitespace() && c.1 != ',' => {
                 if key.is_some() {
                     val = Some(parse(Some(c), chars)?);
