@@ -202,7 +202,7 @@ fn read_bool_or_nil(
         .next()
         .ok_or_else(|| Error::Reason("Could not identify symbol index".to_string()))?
         .0;
-    match c.clone() {
+    match c {
         't' if {
             let val = chars.clone().take(4).map(|c| c.1).collect::<String>();
             val.eq("rue ")

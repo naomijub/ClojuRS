@@ -11,7 +11,7 @@ pub fn is_numeric(list: &[DefinitionTypes]) -> Result<DefinitionTypes, Error> {
             DefinitionTypes::Symbol(symbol) if i == 0 => {
                 if let Some(data) = DATA.lock().unwrap().get(&symbol) {
                     let data = data.clone();
-                    if let Ok(DefinitionTypes::Bool(b)) = is_numeric(&mut vec![data]) {
+                    if let Ok(DefinitionTypes::Bool(b)) = is_numeric(&[data]) {
                         b
                     } else {
                         false
@@ -38,7 +38,7 @@ pub fn is_positive(list: &[DefinitionTypes]) -> Result<DefinitionTypes, Error> {
             DefinitionTypes::Symbol(symbol) => {
                 if let Some(data) = DATA.lock().unwrap().get(&symbol) {
                     let data = data.clone();
-                    if let Ok(DefinitionTypes::Bool(b)) = is_positive(&mut vec![data]) {
+                    if let Ok(DefinitionTypes::Bool(b)) = is_positive(&[data]) {
                         b
                     } else {
                         false
@@ -51,7 +51,7 @@ pub fn is_positive(list: &[DefinitionTypes]) -> Result<DefinitionTypes, Error> {
             DefinitionTypes::Int(num) if num > 0.to_bigint().unwrap() => true,
             DefinitionTypes::Rational(num, _) if num > BigInt::zero() => true,
             DefinitionTypes::List(mut l) => {
-                let eval = eval_list(&mut l).unwrap_or(String::new());
+                let eval = eval_list(&mut l).unwrap_or_default();
 
                 if eval.parse::<BigInt>().is_ok() {
                     eval.parse::<BigInt>().unwrap() > BigInt::zero()
@@ -72,7 +72,7 @@ pub fn is_negative(list: &[DefinitionTypes]) -> Result<DefinitionTypes, Error> {
             DefinitionTypes::Symbol(symbol) => {
                 if let Some(data) = DATA.lock().unwrap().get(&symbol) {
                     let data = data.clone();
-                    if let Ok(DefinitionTypes::Bool(b)) = is_negative(&mut vec![data]) {
+                    if let Ok(DefinitionTypes::Bool(b)) = is_negative(&[data]) {
                         b
                     } else {
                         false
@@ -85,7 +85,7 @@ pub fn is_negative(list: &[DefinitionTypes]) -> Result<DefinitionTypes, Error> {
             DefinitionTypes::Int(num) if num < 0.to_bigint().unwrap() => true,
             DefinitionTypes::Rational(num, _) if num < BigInt::zero() => true,
             DefinitionTypes::List(mut l) => {
-                let eval = eval_list(&mut l).unwrap_or(String::new());
+                let eval = eval_list(&mut l).unwrap_or_default();
 
                 if eval.parse::<BigInt>().is_ok() {
                     eval.parse::<BigInt>().unwrap() < BigInt::zero()
