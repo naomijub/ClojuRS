@@ -115,8 +115,6 @@ impl PartialEq for DefinitionTypes {
             (Self::OrderedMap(l0), Self::OrderedMap(r0)) => l0 == r0,
             (Self::List(l0), Self::List(r0)) => l0 == r0,
             (Self::Vector(l0), Self::Vector(r0)) => l0 == r0,
-            (Self::Vector(l0), Self::List(r0)) => l0 == r0,
-            (Self::List(l0), Self::Vector(r0)) => l0 == r0,
             _ => core::mem::discriminant(self) == core::mem::discriminant(other),
         }
     }
@@ -188,6 +186,28 @@ impl DefinitionTypes {
         };
 
         Ok(res)
+    }
+
+    pub fn eval(self) -> Result<Self, Error> {
+        use crate::STD;
+        if let Self::List(mut list) = self.clone() {
+            if list.is_empty() {
+                return Ok(Self::List(Vec::new()));
+            }
+
+            let mut list = list.iter_mut();
+            let next = list.next();
+            if let Some(Self::Symbol(symbol)) = next {
+                let rest: Vec<Self> = list.map(|e| e.clone()).collect();
+                STD.get(symbol)
+                    .ok_or_else(|| Error::UnknownSymbol(symbol.to_string()))?(&rest)
+            } else {
+                let next = next.map(|e| e.print().unwrap_or_default());
+                Err(Error::CantEval(next))
+            }
+        } else {
+            Ok(self)
+        }
     }
 }
 

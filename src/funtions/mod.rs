@@ -1,6 +1,7 @@
 use num_bigint::ToBigInt;
 
 use crate::{definitions::DefinitionTypes as T, error::Error, STD};
+pub mod logic;
 pub mod math;
 
 pub type Func = fn(&[T]) -> Result<T, Error>;
