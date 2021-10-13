@@ -58,14 +58,14 @@ impl Display for DefinitionTypes {
             DefinitionTypes::Rational(num, den) => write!(f, "{}/{}", num, den),
             DefinitionTypes::HashSet(set) => {
                 let set = set.iter().collect::<Vec<&DefinitionTypes>>();
-                write!(f, "HS={:?}", set)
+                write!(f, "#{{0HS}}={:?}", set)
             }
             DefinitionTypes::HashMap(map) => {
                 let mut map = map
                     .iter()
                     .collect::<Vec<(&DefinitionTypes, &DefinitionTypes)>>();
                 map.sort();
-                write!(f, "HM={:?}", map)
+                write!(f, "{{0HM}}={:?}", map)
             }
             _ => write!(f, "{:?}", self),
         }
