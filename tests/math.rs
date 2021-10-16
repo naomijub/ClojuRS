@@ -2,7 +2,7 @@ use ClojuRS::read;
 
 #[test]
 fn what_is_the_meaning_of_life() {
-    assert_eq!(read("(meaning-of-life)").unwrap(), "42");
+    assert_eq!(read("(meaning-of-life?)").unwrap(), "42");
 }
 
 #[test]

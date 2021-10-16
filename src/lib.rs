@@ -13,7 +13,7 @@ use parser::{parse, tokenize};
 use im::{hashmap, HashMap as Hamt};
 
 use crate::funtions::{
-    logic::eq,
+    logic::{eq, ge, greater, le, lesser},
     math::{is_negative, is_numeric, is_positive, plus, sub},
     meaning_of_life,
 };
@@ -28,11 +28,15 @@ lazy_static! {
     pub static ref STD: Hamt<String, Func> = hashmap! {
         String::from("+") => plus as Func,
         String::from("-") => sub as Func,
-        String::from("meaning-of-life") => meaning_of_life as Func,
+        String::from("meaning-of-life?") => meaning_of_life as Func,
         String::from("neg?") => is_negative as Func,
         String::from("pos?") => is_positive as Func,
         String::from("num?") => is_numeric as Func,
         String::from("=") => eq as Func,
+        String::from(">=") => ge as Func,
+        String::from(">") => greater as Func,
+        String::from("<=") => le as Func,
+        String::from("<") => lesser as Func,
     };
     pub static ref LOCAL: Mutex<Hamt<String, Func>> = Mutex::new(Hamt::new());
     pub static ref DATA: Mutex<Hamt<String, T>> = Mutex::new(Hamt::new());
