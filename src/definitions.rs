@@ -450,3 +450,186 @@ impl ops::Sub for DefinitionTypes {
         Ok(res)
     }
 }
+
+impl ops::Mul for DefinitionTypes {
+    type Output = Result<Self, Error>;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        let res = match self {
+            DefinitionTypes::Symbol(_) => todo!(),
+            DefinitionTypes::Keyword(_) => Err(Error::CantEval(Some(String::from(
+                "Can't eval mul of keyword",
+            )))),
+            DefinitionTypes::String(_) => Err(Error::CantEval(Some(String::from(
+                "Can't mul non-string to string using `+`",
+            )))),
+            DefinitionTypes::Char(_) => Err(Error::CantEval(Some(String::from(
+                "Can't eval mul of char",
+            )))),
+            DefinitionTypes::Bool(_) => Err(Error::CantEval(Some(String::from(
+                "Can't eval mul of bool",
+            )))),
+            DefinitionTypes::Double(num) => match rhs {
+                DefinitionTypes::Double(rhs_num) => Ok(DefinitionTypes::Double(num * rhs_num)),
+                DefinitionTypes::Int(rhs_num) => Ok(DefinitionTypes::Double(
+                    (num.0 * rhs_num.to_f64().ok_or(Error::IntParseError)?).into(),
+                )),
+                DefinitionTypes::Rational(rhs_num, rhs_den) => Ok(DefinitionTypes::Double(
+                    (num.0 * (rhs_num.to_f64().ok_or(Error::IntParseError)?)
+                        / rhs_den.to_f64().ok_or(Error::IntParseError)?)
+                    .into(),
+                )),
+                DefinitionTypes::Nil => Ok(DefinitionTypes::Nil),
+                _ => Err(Error::CantEval(Some(String::from(
+                    "Can't mul non-numeric to numeric using `+`",
+                )))),
+            },
+            DefinitionTypes::Int(num) => match rhs {
+                DefinitionTypes::Double(rhs_num) => Ok(DefinitionTypes::Double(
+                    (num.to_f64().ok_or(Error::IntParseError)? * rhs_num.0).into(),
+                )),
+                DefinitionTypes::Int(rhs_num) => Ok(DefinitionTypes::Int(num * rhs_num)),
+                DefinitionTypes::Rational(rhs_num, rhs_den) => {
+                    Ok(DefinitionTypes::Rational(rhs_num * num, rhs_den))
+                }
+                DefinitionTypes::Nil => Ok(DefinitionTypes::Nil),
+                _ => Err(Error::CantEval(Some(String::from(
+                    "Can't mul non-numeric to numeric using `+`",
+                )))),
+            },
+            DefinitionTypes::Rational(num, den) => match rhs {
+                DefinitionTypes::Double(rhs_num) => Ok(DefinitionTypes::Double(
+                    ((num.to_f64().ok_or(Error::IntParseError)?
+                        / den.to_f64().ok_or(Error::IntParseError)?)
+                        * rhs_num.0)
+                        .into(),
+                )),
+                DefinitionTypes::Int(rhs_num) => Ok(DefinitionTypes::Rational(num * rhs_num, den)),
+                DefinitionTypes::Rational(rhs_num, rhs_den) => {
+                    Ok(DefinitionTypes::Rational(rhs_num * num, rhs_den * den))
+                }
+                DefinitionTypes::Nil => Ok(DefinitionTypes::Nil),
+                _ => Err(Error::CantEval(Some(String::from(
+                    "Can't mul non-numeric to numeric using `+`",
+                )))),
+            },
+            DefinitionTypes::HashSet(_) => Err(Error::CantEval(Some(String::from(
+                "Can't mul non-hash-set to hash-set using `+`",
+            )))),
+            DefinitionTypes::OrderedSet(_) => Err(Error::CantEval(Some(String::from(
+                "Can't mul non-ordered-set to ordered-set using `+`",
+            )))),
+            DefinitionTypes::HashMap(_) => Err(Error::CantEval(Some(String::from(
+                "Can't mul non-hash-map to hash-map using `+`",
+            )))),
+            DefinitionTypes::OrderedMap(_) => Err(Error::CantEval(Some(String::from(
+                "Can't mul non-ordered-map to ordered-map using `+`",
+            )))),
+            DefinitionTypes::List(_) => todo!("eval list not implemented"),
+            DefinitionTypes::Vector(_) => Err(Error::CantEval(Some(String::from(
+                "Can't mul non-vector to vector using `+`",
+            )))),
+            DefinitionTypes::Nil => Ok(DefinitionTypes::Nil),
+        }?;
+
+        Ok(res)
+    }
+}
+
+impl ops::Div for DefinitionTypes {
+    type Output = Result<Self, Error>;
+
+    fn div(self, rhs: Self) -> Self::Output {
+        let res = match self {
+            DefinitionTypes::Symbol(_) => todo!(),
+            DefinitionTypes::Keyword(_) => Err(Error::CantEval(Some(String::from(
+                "Can't eval mul of keyword",
+            )))),
+            DefinitionTypes::String(_) => Err(Error::CantEval(Some(String::from(
+                "Can't mul non-string to string using `+`",
+            )))),
+            DefinitionTypes::Char(_) => Err(Error::CantEval(Some(String::from(
+                "Can't eval mul of char",
+            )))),
+            DefinitionTypes::Bool(_) => Err(Error::CantEval(Some(String::from(
+                "Can't eval mul of bool",
+            )))),
+            DefinitionTypes::Double(num) => match rhs {
+                DefinitionTypes::Double(rhs_num) => Ok(DefinitionTypes::Double(num / rhs_num)),
+                DefinitionTypes::Int(rhs_num) => Ok(DefinitionTypes::Double(
+                    (num.0 / rhs_num.to_f64().ok_or(Error::IntParseError)?).into(),
+                )),
+                DefinitionTypes::Rational(rhs_num, rhs_den) => Ok(DefinitionTypes::Double(
+                    (num.0
+                        / (rhs_num.to_f64().ok_or(Error::IntParseError)?
+                            / rhs_den.to_f64().ok_or(Error::IntParseError)?))
+                    .into(),
+                )),
+                DefinitionTypes::Nil => Ok(DefinitionTypes::Nil),
+                _ => Err(Error::CantEval(Some(String::from(
+                    "Can't mul non-numeric to numeric using `+`",
+                )))),
+            },
+            DefinitionTypes::Int(num) => match rhs {
+                DefinitionTypes::Double(rhs_num) => Ok(DefinitionTypes::Double(
+                    (num.to_f64().ok_or(Error::IntParseError)? / rhs_num.0).into(),
+                )),
+                DefinitionTypes::Int(rhs_num) => {
+                    if num.clone() % rhs_num.clone() == BigInt::zero() {
+                        Ok(DefinitionTypes::Int(num / rhs_num))
+                    } else {
+                        Ok(DefinitionTypes::Rational(num, rhs_num))
+                    }
+                }
+                DefinitionTypes::Rational(rhs_num, rhs_den) => {
+                    Ok(DefinitionTypes::Rational(rhs_den * num, rhs_num))
+                }
+                DefinitionTypes::Nil => Ok(DefinitionTypes::Nil),
+                _ => Err(Error::CantEval(Some(String::from(
+                    "Can't mul non-numeric to numeric using `+`",
+                )))),
+            },
+            DefinitionTypes::Rational(num, den) => match rhs {
+                DefinitionTypes::Double(rhs_num) => Ok(DefinitionTypes::Double(
+                    ((num.to_f64().ok_or(Error::IntParseError)?
+                        / den.to_f64().ok_or(Error::IntParseError)?)
+                        / rhs_num.0)
+                        .into(),
+                )),
+                DefinitionTypes::Int(rhs_num) => {
+                    if num.clone() % rhs_num.clone() == BigInt::zero() {
+                        Ok(DefinitionTypes::Rational(num / rhs_num, den))
+                    } else {
+                        Ok(DefinitionTypes::Rational(num, den * rhs_num))
+                    }
+                }
+                DefinitionTypes::Rational(rhs_num, rhs_den) => {
+                    Ok(DefinitionTypes::Rational(rhs_den * num, rhs_num * den))
+                }
+                DefinitionTypes::Nil => Ok(DefinitionTypes::Nil),
+                _ => Err(Error::CantEval(Some(String::from(
+                    "Can't mul non-numeric to numeric using `+`",
+                )))),
+            },
+            DefinitionTypes::HashSet(_) => Err(Error::CantEval(Some(String::from(
+                "Can't mul non-hash-set to hash-set using `+`",
+            )))),
+            DefinitionTypes::OrderedSet(_) => Err(Error::CantEval(Some(String::from(
+                "Can't mul non-ordered-set to ordered-set using `+`",
+            )))),
+            DefinitionTypes::HashMap(_) => Err(Error::CantEval(Some(String::from(
+                "Can't mul non-hash-map to hash-map using `+`",
+            )))),
+            DefinitionTypes::OrderedMap(_) => Err(Error::CantEval(Some(String::from(
+                "Can't mul non-ordered-map to ordered-map using `+`",
+            )))),
+            DefinitionTypes::List(_) => todo!("eval list not implemented"),
+            DefinitionTypes::Vector(_) => Err(Error::CantEval(Some(String::from(
+                "Can't mul non-vector to vector using `+`",
+            )))),
+            DefinitionTypes::Nil => Ok(DefinitionTypes::Nil),
+        }?;
+
+        Ok(res)
+    }
+}

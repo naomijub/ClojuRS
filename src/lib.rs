@@ -14,7 +14,7 @@ use im::{hashmap, HashMap as Hamt};
 
 use crate::funtions::{
     logic::{eq, ge, greater, le, lesser},
-    math::{is_negative, is_numeric, is_positive, plus, sub},
+    math::{div, is_negative, is_numeric, is_positive, mul, plus, sub},
     meaning_of_life,
 };
 
@@ -28,6 +28,8 @@ lazy_static! {
     pub static ref STD: Hamt<String, Func> = hashmap! {
         String::from("+") => plus as Func,
         String::from("-") => sub as Func,
+        String::from("*") => mul as Func,
+        String::from("/") => div as Func,
         String::from("meaning-of-life?") => meaning_of_life as Func,
         String::from("neg?") => is_negative as Func,
         String::from("pos?") => is_positive as Func,
