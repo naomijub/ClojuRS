@@ -2,7 +2,7 @@ use ClojuRS::read;
 
 #[test]
 fn what_is_the_meaning_of_life() {
-    assert_eq!(read("(meaning-of-life)").unwrap(), "42");
+    assert_eq!(read("(meaning-of-life?)").unwrap(), "42");
 }
 
 #[test]
@@ -66,4 +66,29 @@ fn sub_values() {
     assert_eq!(read("(- 1 2/3)").unwrap(), "1/3");
     assert_eq!(read("(- 1 4.5 1/2)").unwrap(), "-4");
     assert!(read("(- 1 4.1 1/2)").unwrap().contains("-3.5999"));
+}
+
+#[test]
+fn mul_values() {
+    assert_eq!(read("(* 4 2 3)").unwrap(), "24");
+    assert_eq!(read("(* 4 -2 3)").unwrap(), "-24");
+    assert_eq!(read("(* 2 2.3)").unwrap(), "4.6");
+    assert_eq!(read("(* 2 -2.3)").unwrap(), "-4.6");
+    assert_eq!(read("(* 2 2/3)").unwrap(), "4/3");
+    assert_eq!(read("(* 3/4 2/3)").unwrap(), "6/12");
+    assert_eq!(read("(* 1 4.5 1/2)").unwrap(), "2.25");
+    assert_eq!(read("(* 1 4.1 -1/2)").unwrap(), "-2.05");
+}
+
+#[test]
+fn div_values() {
+    assert_eq!(read("(/ 4 2 3)").unwrap(), "2/3");
+    assert_eq!(read("(/ 4 2 1)").unwrap(), "2");
+    assert_eq!(read("(/ 4 -2 3)").unwrap(), "-2/3");
+    assert!(read("(/ 2 2.3)").unwrap().contains("0.8695652"));
+    assert!(read("(/ 2 -2.3)").unwrap().contains("-0.8695652"));
+    assert_eq!(read("(/ 2 2/3)").unwrap(), "6/2");
+    assert_eq!(read("(/ 3/4 2/3)").unwrap(), "9/8");
+    assert!(read("(/ 1 4.5 1/2)").unwrap().contains("0.4444"));
+    assert!(read("(/ 1 4.1 -1/2)").unwrap().contains("-0.487804"));
 }

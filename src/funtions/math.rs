@@ -1,5 +1,5 @@
 use num_bigint::{BigInt, ToBigInt};
-use num_traits::Zero;
+use num_traits::{One, Zero};
 
 use crate::{definitions::DefinitionTypes as T, error::Error, DATA};
 
@@ -138,6 +138,20 @@ pub fn sub(list: &[T]) -> Result<T, Error> {
     if let Some((first, rest)) = list.split_first() {
         rest.iter()
             .try_fold(first.to_owned(), |acc, e| acc - e.to_owned())
+    } else {
+        Err(Error::Reason(String::from("Couldn't parse form content")))
+    }
+}
+
+pub fn mul(list: &[T]) -> Result<T, Error> {
+    list.iter()
+        .try_fold(T::Int(BigInt::one()), |acc, e| acc * e.clone())
+}
+
+pub fn div(list: &[T]) -> Result<T, Error> {
+    if let Some((first, rest)) = list.split_first() {
+        rest.iter()
+            .try_fold(first.to_owned(), |acc, e| acc / e.to_owned())
     } else {
         Err(Error::Reason(String::from("Couldn't parse form content")))
     }
