@@ -59,3 +59,5 @@ pub fn is_true(list: &[T]) -> Result<T, Error> {
         _ => true,
     })))
 }
+
+// fn every? and fn some? Issue 16
