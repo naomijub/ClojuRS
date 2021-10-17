@@ -90,7 +90,7 @@ impl PartialOrd for DefinitionTypes {
 
 impl PartialEq for DefinitionTypes {
     fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
+        match (&self.clone(), &other.clone()) {
             (Self::Symbol(l0), Self::Symbol(r0)) => l0 == r0,
             (Self::Keyword(l0), Self::Keyword(r0)) => l0 == r0,
             (Self::String(l0), Self::String(r0)) => l0 == r0,
@@ -113,8 +113,13 @@ impl PartialEq for DefinitionTypes {
             (Self::OrderedSet(l0), Self::OrderedSet(r0)) => l0 == r0,
             (Self::HashMap(l0), Self::HashMap(r0)) => l0 == r0,
             (Self::OrderedMap(l0), Self::OrderedMap(r0)) => l0 == r0,
-            (Self::List(l0), Self::List(r0)) => l0 == r0,
+            (Self::List(_), Self::List(_)) => {
+                self.clone().eval().unwrap_or(DefinitionTypes::Nil)
+                    == other.clone().eval().unwrap_or(DefinitionTypes::Bool(true))
+            }
             (Self::Vector(l0), Self::Vector(r0)) => l0 == r0,
+            (v, Self::List(_)) => v == &other.clone().eval().unwrap_or(DefinitionTypes::Bool(true)),
+            (Self::List(_), v) => v == &self.clone().eval().unwrap_or(DefinitionTypes::Nil),
             _ => core::mem::discriminant(self) == core::mem::discriminant(other),
         }
     }
@@ -217,7 +222,7 @@ impl ops::Add for DefinitionTypes {
     type Output = Result<Self, Error>;
 
     fn add(self, rhs: Self) -> Self::Output {
-        let res = match self {
+        let res = match self.clone() {
             DefinitionTypes::Symbol(_) => todo!(),
             DefinitionTypes::Keyword(_) => Err(Error::CantEval(Some(String::from(
                 "Can't eval add of keyword",
@@ -226,6 +231,8 @@ impl ops::Add for DefinitionTypes {
                 if let DefinitionTypes::String(rhs_s) = rhs {
                     let s = String::new() + &s + &rhs_s;
                     Ok(DefinitionTypes::String(s))
+                } else if let DefinitionTypes::List(_) = rhs {
+                    self + rhs.eval()?
                 } else {
                     Err(Error::CantEval(Some(String::from(
                         "Can't add non-string to string using `+`",
@@ -249,6 +256,7 @@ impl ops::Add for DefinitionTypes {
                         / rhs_den.to_f64().ok_or(Error::IntParseError)?)
                     .into(),
                 )),
+                DefinitionTypes::List(_) => self + rhs.eval()?,
                 DefinitionTypes::Nil => Ok(DefinitionTypes::Nil),
                 _ => Err(Error::CantEval(Some(String::from(
                     "Can't add non-numeric to numeric using `+`",
@@ -263,6 +271,7 @@ impl ops::Add for DefinitionTypes {
                     rhs_num + (num * &rhs_den),
                     rhs_den,
                 )),
+                DefinitionTypes::List(_) => self + rhs.eval()?,
                 DefinitionTypes::Nil => Ok(DefinitionTypes::Nil),
                 _ => Err(Error::CantEval(Some(String::from(
                     "Can't add non-numeric to numeric using `+`",
@@ -286,6 +295,7 @@ impl ops::Add for DefinitionTypes {
                     },
                     rhs_den * den,
                 )),
+                DefinitionTypes::List(_) => self + rhs.eval()?,
                 DefinitionTypes::Nil => Ok(DefinitionTypes::Nil),
                 _ => Err(Error::CantEval(Some(String::from(
                     "Can't add non-numeric to numeric using `+`",
@@ -298,6 +308,8 @@ impl ops::Add for DefinitionTypes {
                         v.insert(k);
                     }
                     Ok(DefinitionTypes::HashSet(v))
+                } else if let DefinitionTypes::List(_) = rhs {
+                    self + rhs.eval()?
                 } else {
                     Err(Error::CantEval(Some(String::from(
                         "Can't add non-hash-set to hash-set using `+`",
@@ -310,6 +322,8 @@ impl ops::Add for DefinitionTypes {
                     let mut rhs_v = rhs_v;
                     v.append(&mut rhs_v);
                     Ok(DefinitionTypes::OrderedSet(v))
+                } else if let DefinitionTypes::List(_) = rhs {
+                    self + rhs.eval()?
                 } else {
                     Err(Error::CantEval(Some(String::from(
                         "Can't add non-ordered-set to ordered-set using `+`",
@@ -323,6 +337,8 @@ impl ops::Add for DefinitionTypes {
                         v.insert(k, val);
                     }
                     Ok(DefinitionTypes::HashMap(v))
+                } else if let DefinitionTypes::List(_) = rhs {
+                    self + rhs.eval()?
                 } else {
                     Err(Error::CantEval(Some(String::from(
                         "Can't add non-hash-map to hash-map using `+`",
@@ -335,19 +351,23 @@ impl ops::Add for DefinitionTypes {
                     let mut rhs_v = rhs_v;
                     v.append(&mut rhs_v);
                     Ok(DefinitionTypes::OrderedMap(v))
+                } else if let DefinitionTypes::List(_) = rhs {
+                    self + rhs.eval()?
                 } else {
                     Err(Error::CantEval(Some(String::from(
                         "Can't add non-ordered-map to ordered-map using `+`",
                     ))))
                 }
             }
-            DefinitionTypes::List(_) => todo!("eval list not implemented"),
+            DefinitionTypes::List(_) => self.eval()? + rhs,
             DefinitionTypes::Vector(v) => {
                 if let DefinitionTypes::Vector(rhs_v) = rhs {
                     let mut v = v;
                     let mut rhs_v = rhs_v;
                     v.append(&mut rhs_v);
                     Ok(DefinitionTypes::Vector(v))
+                } else if let DefinitionTypes::List(_) = rhs {
+                    self + rhs.eval()?
                 } else {
                     Err(Error::CantEval(Some(String::from(
                         "Can't add non-vector to vector using `+`",
@@ -365,7 +385,7 @@ impl ops::Sub for DefinitionTypes {
     type Output = Result<Self, Error>;
 
     fn sub(self, rhs: Self) -> Self::Output {
-        let res = match self {
+        let res = match self.clone() {
             DefinitionTypes::Symbol(_) => todo!(),
             DefinitionTypes::Keyword(_) => Err(Error::CantEval(Some(String::from(
                 "Can't eval sub of keyword",
@@ -390,6 +410,7 @@ impl ops::Sub for DefinitionTypes {
                         / rhs_den.to_f64().ok_or(Error::IntParseError)?)
                     .into(),
                 )),
+                DefinitionTypes::List(_) => self - rhs.eval()?,
                 DefinitionTypes::Nil => Ok(DefinitionTypes::Nil),
                 _ => Err(Error::CantEval(Some(String::from(
                     "Can't sub non-numeric to numeric using `+`",
@@ -404,6 +425,7 @@ impl ops::Sub for DefinitionTypes {
                     (num * &rhs_den) - rhs_num,
                     rhs_den,
                 )),
+                DefinitionTypes::List(_) => self - rhs.eval()?,
                 DefinitionTypes::Nil => Ok(DefinitionTypes::Nil),
                 _ => Err(Error::CantEval(Some(String::from(
                     "Can't sub non-numeric to numeric using `+`",
@@ -423,6 +445,7 @@ impl ops::Sub for DefinitionTypes {
                     (num * &rhs_den) - (rhs_num * &den),
                     rhs_den * den,
                 )),
+                DefinitionTypes::List(_) => self - rhs.eval()?,
                 DefinitionTypes::Nil => Ok(DefinitionTypes::Nil),
                 _ => Err(Error::CantEval(Some(String::from(
                     "Can't sub non-numeric to numeric using `+`",
@@ -440,7 +463,7 @@ impl ops::Sub for DefinitionTypes {
             DefinitionTypes::OrderedMap(_) => Err(Error::CantEval(Some(String::from(
                 "Can't eval sub of ordered-map using `-`",
             )))),
-            DefinitionTypes::List(_) => todo!("eval list not implemented"),
+            DefinitionTypes::List(_) => self.eval()? - rhs,
             DefinitionTypes::Vector(_) => Err(Error::CantEval(Some(String::from(
                 "Can't eval sub of vector using `-`",
             )))),
@@ -455,7 +478,7 @@ impl ops::Mul for DefinitionTypes {
     type Output = Result<Self, Error>;
 
     fn mul(self, rhs: Self) -> Self::Output {
-        let res = match self {
+        let res = match self.clone() {
             DefinitionTypes::Symbol(_) => todo!(),
             DefinitionTypes::Keyword(_) => Err(Error::CantEval(Some(String::from(
                 "Can't eval mul of keyword",
@@ -479,6 +502,7 @@ impl ops::Mul for DefinitionTypes {
                         / rhs_den.to_f64().ok_or(Error::IntParseError)?)
                     .into(),
                 )),
+                DefinitionTypes::List(_) => self * rhs.eval()?,
                 DefinitionTypes::Nil => Ok(DefinitionTypes::Nil),
                 _ => Err(Error::CantEval(Some(String::from(
                     "Can't mul non-numeric to numeric using `+`",
@@ -492,6 +516,7 @@ impl ops::Mul for DefinitionTypes {
                 DefinitionTypes::Rational(rhs_num, rhs_den) => {
                     Ok(DefinitionTypes::Rational(rhs_num * num, rhs_den))
                 }
+                DefinitionTypes::List(_) => self * rhs.eval()?,
                 DefinitionTypes::Nil => Ok(DefinitionTypes::Nil),
                 _ => Err(Error::CantEval(Some(String::from(
                     "Can't mul non-numeric to numeric using `+`",
@@ -508,6 +533,7 @@ impl ops::Mul for DefinitionTypes {
                 DefinitionTypes::Rational(rhs_num, rhs_den) => {
                     Ok(DefinitionTypes::Rational(rhs_num * num, rhs_den * den))
                 }
+                DefinitionTypes::List(_) => self * rhs.eval()?,
                 DefinitionTypes::Nil => Ok(DefinitionTypes::Nil),
                 _ => Err(Error::CantEval(Some(String::from(
                     "Can't mul non-numeric to numeric using `+`",
@@ -525,7 +551,7 @@ impl ops::Mul for DefinitionTypes {
             DefinitionTypes::OrderedMap(_) => Err(Error::CantEval(Some(String::from(
                 "Can't mul non-ordered-map to ordered-map using `+`",
             )))),
-            DefinitionTypes::List(_) => todo!("eval list not implemented"),
+            DefinitionTypes::List(_) => self.eval()? * rhs,
             DefinitionTypes::Vector(_) => Err(Error::CantEval(Some(String::from(
                 "Can't mul non-vector to vector using `+`",
             )))),
@@ -540,7 +566,7 @@ impl ops::Div for DefinitionTypes {
     type Output = Result<Self, Error>;
 
     fn div(self, rhs: Self) -> Self::Output {
-        let res = match self {
+        let res = match self.clone() {
             DefinitionTypes::Symbol(_) => todo!(),
             DefinitionTypes::Keyword(_) => Err(Error::CantEval(Some(String::from(
                 "Can't eval mul of keyword",
@@ -565,6 +591,7 @@ impl ops::Div for DefinitionTypes {
                             / rhs_den.to_f64().ok_or(Error::IntParseError)?))
                     .into(),
                 )),
+                DefinitionTypes::List(_) => self / rhs.eval()?,
                 DefinitionTypes::Nil => Ok(DefinitionTypes::Nil),
                 _ => Err(Error::CantEval(Some(String::from(
                     "Can't mul non-numeric to numeric using `+`",
@@ -584,6 +611,7 @@ impl ops::Div for DefinitionTypes {
                 DefinitionTypes::Rational(rhs_num, rhs_den) => {
                     Ok(DefinitionTypes::Rational(rhs_den * num, rhs_num))
                 }
+                DefinitionTypes::List(_) => self / rhs.eval()?,
                 DefinitionTypes::Nil => Ok(DefinitionTypes::Nil),
                 _ => Err(Error::CantEval(Some(String::from(
                     "Can't mul non-numeric to numeric using `+`",
@@ -606,6 +634,7 @@ impl ops::Div for DefinitionTypes {
                 DefinitionTypes::Rational(rhs_num, rhs_den) => {
                     Ok(DefinitionTypes::Rational(rhs_den * num, rhs_num * den))
                 }
+                DefinitionTypes::List(_) => self / rhs.eval()?,
                 DefinitionTypes::Nil => Ok(DefinitionTypes::Nil),
                 _ => Err(Error::CantEval(Some(String::from(
                     "Can't mul non-numeric to numeric using `+`",
@@ -623,7 +652,7 @@ impl ops::Div for DefinitionTypes {
             DefinitionTypes::OrderedMap(_) => Err(Error::CantEval(Some(String::from(
                 "Can't mul non-ordered-map to ordered-map using `+`",
             )))),
-            DefinitionTypes::List(_) => todo!("eval list not implemented"),
+            DefinitionTypes::List(_) => self.eval()? / rhs,
             DefinitionTypes::Vector(_) => Err(Error::CantEval(Some(String::from(
                 "Can't mul non-vector to vector using `+`",
             )))),
