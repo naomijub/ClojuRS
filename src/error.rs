@@ -1,5 +1,6 @@
 use num_bigint::ParseBigIntError;
 
+// Issue 12
 #[derive(Debug, Clone)]
 pub enum Error {
     Reason(String),

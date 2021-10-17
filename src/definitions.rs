@@ -28,6 +28,8 @@ pub enum DefinitionTypes {
     List(Vec<DefinitionTypes>),
     Vector(Vec<DefinitionTypes>),
     Nil,
+    // Issue 11
+    // Issue 13
 }
 
 impl Hash for DefinitionTypes {

@@ -41,6 +41,7 @@ lazy_static! {
         String::from("<") => lesser as Func,
         String::from("true?") => is_true as Func,
         String::from("false?") => is_false as Func,
+        // Issue 10
     };
     pub static ref LOCAL: Mutex<Hamt<String, Func>> = Mutex::new(Hamt::new());
     pub static ref DATA: Mutex<Hamt<String, T>> = Mutex::new(Hamt::new());
