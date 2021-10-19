@@ -37,7 +37,7 @@ fn is_true() {
     assert_eq!(read("(true? nil)").unwrap(), "false");
     assert_eq!(read("(true? false)").unwrap(), "false");
     assert_eq!(read("(true? 1 :hello \"true\" nil)").unwrap(), "false");
-    // assert_eq!(read("(true? (= false true) (= 1 1))").unwrap(), "false");
+    assert_eq!(read("(true? (= false true) (= 1 1))").unwrap(), "false");
 }
 
 #[test]
