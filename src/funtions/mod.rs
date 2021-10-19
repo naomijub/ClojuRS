@@ -29,3 +29,17 @@ pub fn eval_list(list: &mut Vec<T>) -> Result<String, Error> {
 pub fn meaning_of_life(_: &[T]) -> Result<T, Error> {
     Ok(T::Int(42.to_bigint().ok_or(Error::IntParseError)?))
 }
+
+pub fn throw(message: &[T]) -> Result<T, Error> {
+    if message.len() != 1 {
+        return Err(Error::ArityException(
+            1,
+            format!("`throw` has arity of 1 but received {}", message.len()),
+        ));
+    }
+    if let T::String(msg) = message[0].clone() {
+        Err(Error::Thrown(msg))
+    } else {
+        Err(Error::CantEval(Some(format!("{:?}", message))))
+    }
+}
