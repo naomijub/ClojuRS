@@ -132,7 +132,13 @@ impl DefinitionTypes {
     pub fn print(&self) -> Result<String, Error> {
         let res = match self.clone() {
             DefinitionTypes::Symbol(el) => el,
-            DefinitionTypes::Keyword(el) => format!(":{}", el),
+            DefinitionTypes::Keyword(el) => {
+                if el.starts_with(':') {
+                    el
+                } else {
+                    format!(":{}", el)
+                }
+            }
             DefinitionTypes::String(el) => format!("\"{}\"", el),
             DefinitionTypes::Char(el) => format!("\\{}", el),
             DefinitionTypes::Bool(el) => el.to_string(),

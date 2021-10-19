@@ -2,6 +2,7 @@ use ClojuRS::{error::Error, read};
 
 mod logic;
 mod math;
+mod std;
 
 #[test]
 fn inner_1() {

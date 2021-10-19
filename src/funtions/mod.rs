@@ -3,6 +3,7 @@ use num_bigint::ToBigInt;
 use crate::{definitions::DefinitionTypes as T, error::Error, STD};
 pub mod logic;
 pub mod math;
+pub mod std;
 // pub mod adapter_consumers Issue 14
 // pub mod collections Issue 15
 
