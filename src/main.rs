@@ -13,7 +13,7 @@ use parser::{parse, tokenize};
 use im::{hashmap, HashMap as Hamt};
 
 use crate::funtions::{
-    logic::{eq, ge, greater, is_false, is_true, le, lesser},
+    logic::{eq, ge, greater, is_false, is_nil, is_true, le, lesser},
     math::{div, is_negative, is_numeric, is_positive, mul, plus, sub},
     meaning_of_life,
 };
@@ -41,6 +41,7 @@ lazy_static! {
         String::from("<") => lesser as Func,
         String::from("true?") => is_true as Func,
         String::from("false?") => is_false as Func,
+        String::from("nil?") => is_nil as Func,
         // Issue 10
     };
     pub static ref LOCAL: Mutex<Hamt<String, Func>> = Mutex::new(Hamt::new());

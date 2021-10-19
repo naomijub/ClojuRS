@@ -51,3 +51,12 @@ fn is_false() {
     assert_eq!(read("(false? 1 :hello \"true\" true)").unwrap(), "false");
     assert_eq!(read("(false? (= true true) (= 1 1))").unwrap(), "false");
 }
+
+#[test]
+fn is_nil() {
+    assert_eq!(read("(nil? nil)").unwrap(), "true");
+    assert_eq!(read("(nil? false)").unwrap(), "false");
+    assert_eq!(read("(nil? 1 :hello \"true\" nil)").unwrap(), "false");
+    assert_eq!(read("(nil? (= nil true) (= nil 1))").unwrap(), "false");
+    assert_eq!(read("(nil? true)").unwrap(), "false");
+}
