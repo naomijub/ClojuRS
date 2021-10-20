@@ -6,16 +6,17 @@ use std::{io::Write, sync::Mutex};
 
 use definitions::DefinitionTypes as T;
 use error::Error;
-use funtions::Func;
 use helper::MaybeReplaceExt;
 use parser::{parse, tokenize};
 
 use im::{hashmap, HashMap as Hamt};
 
 use crate::funtions::{
-    logic::{eq, ge, greater, is_false, is_true, le, lesser},
+    logic::{eq, ge, greater, is_false, is_nil, is_true, le, lesser},
     math::{div, is_negative, is_numeric, is_positive, mul, plus, sub},
     meaning_of_life,
+    std::{println, str, to_keyword},
+    throw, Func,
 };
 
 pub(crate) mod definitions;
@@ -41,6 +42,11 @@ lazy_static! {
         String::from("<") => lesser as Func,
         String::from("true?") => is_true as Func,
         String::from("false?") => is_false as Func,
+        String::from("nil?") => is_nil as Func,
+        String::from("throw") => throw as Func,
+        String::from("str") => str as Func,
+        String::from("println!") => println as Func,
+        String::from("keyword") => to_keyword as Func,
         // Issue 10
     };
     pub static ref LOCAL: Mutex<Hamt<String, Func>> = Mutex::new(Hamt::new());

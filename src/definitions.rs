@@ -98,6 +98,7 @@ impl PartialEq for DefinitionTypes {
             (Self::String(l0), Self::String(r0)) => l0 == r0,
             (Self::Char(l0), Self::Char(r0)) => l0 == r0,
             (Self::Bool(l0), Self::Bool(r0)) => l0 == r0,
+
             (Self::Double(l0), Self::Double(r0)) => l0 == r0,
             (Self::Double(r0), Self::Rational(l0, l1)) => {
                 &OrderedFloat::from(l0.to_f64().unwrap_or_default() / l1.to_f64().unwrap_or(1f64))
@@ -131,7 +132,13 @@ impl DefinitionTypes {
     pub fn print(&self) -> Result<String, Error> {
         let res = match self.clone() {
             DefinitionTypes::Symbol(el) => el,
-            DefinitionTypes::Keyword(el) => format!(":{}", el),
+            DefinitionTypes::Keyword(el) => {
+                if el.starts_with(':') {
+                    el
+                } else {
+                    format!(":{}", el)
+                }
+            }
             DefinitionTypes::String(el) => format!("\"{}\"", el),
             DefinitionTypes::Char(el) => format!("\\{}", el),
             DefinitionTypes::Bool(el) => el.to_string(),

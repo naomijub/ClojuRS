@@ -1,9 +1,10 @@
 use num_bigint::ParseBigIntError;
 
 // Issue 12
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Error {
     Reason(String),
+    Thrown(String),
     ArityException(u16, String),
     UnknownSymbol(String),
     CantEval(Option<String>),

@@ -86,4 +86,23 @@ pub fn is_true(list: &[T]) -> Result<T, Error> {
     })))
 }
 
+pub fn is_nil(list: &[T]) -> Result<T, Error> {
+    Ok(T::Bool(list.iter().all(|e| match e {
+        T::Symbol(key) => DATA.lock().map_or(false, |m| match m.get(key) {
+            Some(T::Nil) => true,
+            Some(list) => matches!(
+                is_false(&[list.clone().eval().unwrap_or(T::Bool(true))]),
+                Ok(T::Nil)
+            ),
+            _ => false,
+        }),
+        T::Nil => true,
+        T::List(_) => matches!(
+            is_false(&[e.clone().eval().unwrap_or(T::Bool(true))]),
+            Ok(T::Nil)
+        ),
+        _ => false,
+    })))
+}
+
 // fn every? and fn some? Issue 16

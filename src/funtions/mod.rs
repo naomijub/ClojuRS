@@ -3,6 +3,7 @@ use num_bigint::ToBigInt;
 use crate::{definitions::DefinitionTypes as T, error::Error, STD};
 pub mod logic;
 pub mod math;
+pub mod std;
 // pub mod adapter_consumers Issue 14
 // pub mod collections Issue 15
 
@@ -28,4 +29,18 @@ pub fn eval_list(list: &mut Vec<T>) -> Result<String, Error> {
 
 pub fn meaning_of_life(_: &[T]) -> Result<T, Error> {
     Ok(T::Int(42.to_bigint().ok_or(Error::IntParseError)?))
+}
+
+pub fn throw(message: &[T]) -> Result<T, Error> {
+    if message.len() != 1 {
+        return Err(Error::ArityException(
+            1,
+            format!("`throw` has arity of 1 but received {}", message.len()),
+        ));
+    }
+    if let T::String(msg) = message[0].clone() {
+        Err(Error::Thrown(msg))
+    } else {
+        Err(Error::CantEval(Some(format!("{:?}", message))))
+    }
 }
