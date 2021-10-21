@@ -1,5 +1,6 @@
 use ClojuRS::{error::Error, read};
 
+mod collections;
 mod logic;
 mod math;
 mod std;

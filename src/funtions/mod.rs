@@ -5,7 +5,7 @@ pub mod logic;
 pub mod math;
 pub mod std;
 // pub mod adapter_consumers Issue 14
-// pub mod collections Issue 15
+pub mod collections;
 
 pub type Func = fn(&[T]) -> Result<T, Error>;
 
