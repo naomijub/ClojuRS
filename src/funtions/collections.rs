@@ -94,3 +94,15 @@ pub fn get(info: &[T]) -> Result<T, Error> {
 pub fn to_vector(list: &[T]) -> Result<T, Error> {
     Ok(T::Vector(list.iter().map(|e| e.to_owned()).collect()))
 }
+
+pub fn to_hashset(list: &[T]) -> Result<T, Error> {
+    Ok(T::HashSet(
+        list.iter().filter_map(|e| e.clone().eval().ok()).collect(),
+    ))
+}
+
+pub fn to_orderedset(list: &[T]) -> Result<T, Error> {
+    Ok(T::OrderedSet(
+        list.iter().filter_map(|e| e.clone().eval().ok()).collect(),
+    ))
+}

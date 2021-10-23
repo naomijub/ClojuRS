@@ -9,7 +9,7 @@ use num_bigint::BigInt;
 use num_traits::{ToPrimitive, Zero};
 use ordered_float::OrderedFloat;
 
-use crate::{error::Error, funtions::eval_list};
+use crate::{error::Error, funtions::eval_list, helper};
 
 #[derive(Debug, Clone, Eq)]
 pub enum DefinitionTypes {
@@ -76,17 +76,13 @@ impl Display for DefinitionTypes {
 
 impl Ord for DefinitionTypes {
     fn cmp(&self, other: &Self) -> Ordering {
-        let s = self.to_string();
-        let o = other.to_string();
-        s.cmp(&o)
+        helper::cmp(self, other)
     }
 }
 
 impl PartialOrd for DefinitionTypes {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        let s = self.to_string();
-        let o = other.to_string();
-        Some(s.cmp(&o))
+        helper::partial_cmp(self, other)
     }
 }
 
