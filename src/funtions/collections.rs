@@ -136,3 +136,55 @@ pub fn to_orderedmap(list: &[T]) -> Result<T, Error> {
         )))
     }
 }
+
+pub fn assoc(info: &[T]) -> Result<T, Error> {
+    match (info.get(0), info.get(1), info.get(2)) {
+        (None, _, _) => Err(Error::Reason(String::from(
+            "Collection is required for assoc",
+        ))),
+        (_, None, _) => Err(Error::Reason(String::from(
+            "Access index/key is required for assoc",
+        ))),
+        (Some(collection), Some(key), Some(value)) => match collection.clone().eval()? {
+            T::Vector(v) => {
+                if let T::Int(index) = key {
+                    let idx = index.to_usize();
+                    if idx.unwrap_or(usize::MAX) > v.len() {
+                        Err(Error::Reason(
+                            "Index must be inside vector's bound + 1".to_owned(),
+                        ))
+                    } else if idx.unwrap_or(usize::MAX) == v.len() {
+                        let mut v = v.clone();
+                        v.push(value.clone());
+                        Ok(T::Vector(v))
+                    } else {
+                        let mut v = v.clone();
+                        v[idx.ok_or(Error::IntParseError)?] = value.clone();
+                        Ok(T::Vector(v))
+                    }
+                } else {
+                    Err(Error::Reason(String::from("Index must be of type int")))
+                }
+            }
+            T::HashMap(hm) => {
+                let mut hm = hm.clone();
+                hm.entry(key.clone())
+                    .and_modify(|e| *e = value.clone())
+                    .or_insert_with(|| value.clone());
+                Ok(T::HashMap(hm))
+            }
+            T::OrderedMap(om) => {
+                let mut om = om.clone();
+                om.entry(key.clone())
+                    .and_modify(|e| *e = value.clone())
+                    .or_insert_with(|| value.clone());
+                Ok(T::OrderedMap(om))
+            }
+            _ => Err(Error::Reason("Assoc not available for type".to_owned())),
+        },
+        (Some(_), Some(_), None) => Err(Error::ArityException(
+            3,
+            format!("`assoc` has arity of 3 but received {}", 2),
+        )),
+    }
+}

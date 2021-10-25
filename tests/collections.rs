@@ -121,3 +121,43 @@ fn ordered_map() {
         "nil"
     );
 }
+
+#[test]
+fn assoc() {
+    assert_eq!(
+        read("(assoc)").err(),
+        Some(Error::Reason("Collection is required for assoc".to_owned()))
+    );
+    assert_eq!(
+        read("(assoc {})").err(),
+        Some(Error::Reason(
+            "Access index/key is required for assoc".to_owned()
+        ))
+    );
+    assert_eq!(
+        read("(assoc [] :key :value)").err(),
+        Some(Error::Reason("Index must be of type int".to_owned()))
+    );
+    assert_eq!(
+        read("(assoc {} :key)").err(),
+        Some(Error::ArityException(
+            3,
+            "`assoc` has arity of 3 but received 2".to_owned()
+        ))
+    );
+    assert_eq!(read("(assoc {} :key :value)").unwrap(), "{:key :value }");
+    assert!(read("(assoc {:key :value :key2 :value2 } :key :new-value)")
+        .unwrap()
+        .contains(":key :new-value"));
+    assert_eq!(
+        read("(assoc (sorted-map :key :value :key2 :value2 ) :key :new-value)").unwrap(),
+        "{:key :new-value :key2 :value2 }"
+    );
+    assert_eq!(read("(assoc [] 0 :value)").unwrap(), "[:value ]");
+    assert_eq!(read("(assoc [:1 :2] 0 :value)").unwrap(), "[:value :2 ]");
+    assert_eq!(read("(assoc [:1 :2] 2 :value)").unwrap(), "[:1 :2 :value ]");
+    assert_eq!(
+        read("(assoc (sorted-map  :key2 :value2 ) :key :new-value)").unwrap(),
+        "{:key :new-value :key2 :value2 }"
+    );
+}
