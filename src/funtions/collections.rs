@@ -1,3 +1,5 @@
+use std::collections::{BTreeMap, HashMap};
+
 use num_traits::ToPrimitive;
 
 use crate::{definitions::DefinitionTypes as T, error::Error, DATA};
@@ -105,4 +107,32 @@ pub fn to_orderedset(list: &[T]) -> Result<T, Error> {
     Ok(T::OrderedSet(
         list.iter().filter_map(|e| e.clone().eval().ok()).collect(),
     ))
+}
+
+pub fn to_hashmap(list: &[T]) -> Result<T, Error> {
+    if list.len() % 2 == 0 {
+        Ok(T::HashMap(
+            list.chunks(2)
+                .map(|e| Ok((e[0].clone().eval()?, e[1].clone().eval()?)))
+                .collect::<Result<HashMap<T, T>, Error>>()?,
+        ))
+    } else {
+        Err(Error::Reason(String::from(
+            "Hash map must be formed by pairs",
+        )))
+    }
+}
+
+pub fn to_orderedmap(list: &[T]) -> Result<T, Error> {
+    if list.len() % 2 == 0 {
+        Ok(T::OrderedMap(
+            list.chunks(2)
+                .map(|e| Ok((e[0].clone().eval()?, e[1].clone().eval()?)))
+                .collect::<Result<BTreeMap<T, T>, Error>>()?,
+        ))
+    } else {
+        Err(Error::Reason(String::from(
+            "Sorted map must be formed by pairs",
+        )))
+    }
 }

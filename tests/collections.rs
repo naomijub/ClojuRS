@@ -60,3 +60,64 @@ fn sorted_set() {
     );
     assert_eq!(read("(get (sorted-set 1 2.3 true) 3)").unwrap(), "nil");
 }
+
+#[test]
+fn hashmap() {
+    let hm = read("(hash-map 1 1 1.2 1.2 true true 3/4 3/4 \"hello\" \"hello\" \\c \\c :key :key [1 2 3] [1 2 3] (+ 3 1) (+ 3 1))").unwrap();
+    assert!(
+        hm.contains("{")
+            && hm.contains("}")
+            && hm.contains("1 1")
+            && hm.contains("1.2 1.2")
+            && hm.contains("true true")
+            && hm.contains("3/4 3/4")
+            && hm.contains("\"hello\" \"hello\"")
+            && hm.contains("\\c \\c")
+            && hm.contains(":key :key")
+            && hm.contains("[1 2 3 ] [1 2 3 ]")
+            && hm.contains("4 4")
+    );
+    assert_eq!(
+        read("(hash-map 1 1 1.2 1.2 true)").err(),
+        Some(Error::Reason("Hash map must be formed by pairs".to_owned()))
+    );
+    assert_eq!(
+        read("(get (hash-map 1 2 1.2 1.3 true false) 1.2)").unwrap(),
+        "1.3"
+    );
+    assert_eq!(
+        read("(get (hash-map 1 2 1.2 1.3 true false) 1.3 :oh-no)").unwrap(),
+        ":oh-no"
+    );
+    assert_eq!(
+        read("(get (hash-map 1 1 1.2 1.2 true false) 5)").unwrap(),
+        "nil"
+    );
+}
+
+#[test]
+fn ordered_map() {
+    let sm = read("(sorted-map 1 1 1.2 1.2 true true 3/4 3/4 \"hello\" \"hello\" \\c \\c :key :key (+ 3 1) (+ 3 1))").unwrap();
+    assert_eq!(
+        sm,
+        "{3/4 3/4 1 1 1.2 1.2 4 4 \\c \\c :key :key true true \"hello\" \"hello\" }"
+    );
+    assert_eq!(
+        read("(sorted-map 1 1 1.2 1.2 true)").err(),
+        Some(Error::Reason(
+            "Sorted map must be formed by pairs".to_owned()
+        ))
+    );
+    assert_eq!(
+        read("(get (sorted-map 1 2 1.2 1.3 true false) 1.2)").unwrap(),
+        "1.3"
+    );
+    assert_eq!(
+        read("(get (sorted-map 1 2 1.2 1.3 true false) 1.3 :oh-no)").unwrap(),
+        ":oh-no"
+    );
+    assert_eq!(
+        read("(get (sorted-map 1 1 1.2 1.2 true false) 5)").unwrap(),
+        "nil"
+    );
+}
