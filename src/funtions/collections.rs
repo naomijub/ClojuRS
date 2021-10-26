@@ -2,9 +2,13 @@ use std::collections::{BTreeMap, HashMap};
 
 use num_traits::ToPrimitive;
 
-use crate::{definitions::DefinitionTypes as T, error::Error, DATA};
+use crate::{definitions::DefinitionTypes as T, error::Error, helper::arity_exception, DATA};
 
 pub fn get(info: &[T]) -> Result<T, Error> {
+    if let Some(value) = arity_exception("get", 3, info.len()) {
+        return value;
+    }
+
     match (info.get(0), info.get(1), info.get(2)) {
         (None, _, _) => Err(Error::Reason(String::from(
             "Collection is required for get",
@@ -138,6 +142,9 @@ pub fn to_orderedmap(list: &[T]) -> Result<T, Error> {
 }
 
 pub fn assoc(info: &[T]) -> Result<T, Error> {
+    if let Some(value) = arity_exception("assoc", 3, info.len()) {
+        return value;
+    }
     match (info.get(0), info.get(1), info.get(2)) {
         (None, _, _) => Err(Error::Reason(String::from(
             "Collection is required for assoc",
@@ -149,18 +156,20 @@ pub fn assoc(info: &[T]) -> Result<T, Error> {
             T::Vector(v) => {
                 if let T::Int(index) = key {
                     let idx = index.to_usize();
-                    if idx.unwrap_or(usize::MAX) > v.len() {
-                        Err(Error::Reason(
+                    match idx {
+                        Some(i) if i > v.len() => Err(Error::Reason(
                             "Index must be inside vector's bound + 1".to_owned(),
-                        ))
-                    } else if idx.unwrap_or(usize::MAX) == v.len() {
-                        let mut v = v.clone();
-                        v.push(value.clone());
-                        Ok(T::Vector(v))
-                    } else {
-                        let mut v = v.clone();
-                        v[idx.ok_or(Error::IntParseError)?] = value.clone();
-                        Ok(T::Vector(v))
+                        )),
+                        Some(i) if i == v.len() => {
+                            let mut v = v.clone();
+                            v.push(value.clone());
+                            Ok(T::Vector(v))
+                        }
+                        _ => {
+                            let mut v = v.clone();
+                            v[idx.ok_or(Error::IntParseError)?] = value.clone();
+                            Ok(T::Vector(v))
+                        }
                     }
                 } else {
                     Err(Error::Reason(String::from("Index must be of type int")))
@@ -186,5 +195,36 @@ pub fn assoc(info: &[T]) -> Result<T, Error> {
             3,
             format!("`assoc` has arity of 3 but received {}", 2),
         )),
+    }
+}
+
+pub fn dissoc(info: &[T]) -> Result<T, Error> {
+    if let Some(value) = arity_exception("dissoc", 2, info.len()) {
+        return value;
+    }
+    match (info.get(0), info.get(1)) {
+        (None, _) => Err(Error::Reason(String::from(
+            "Collection is required for dissoc",
+        ))),
+        (_, None) => Err(Error::Reason(String::from(
+            "Access index/key is required for dissoc",
+        ))),
+        (Some(collection), Some(key)) => match collection.clone().eval()? {
+            T::HashMap(hm) => {
+                let mut hm = hm.clone();
+                if hm.contains_key(key) {
+                    hm.remove(key);
+                }
+                Ok(T::HashMap(hm))
+            }
+            T::OrderedMap(om) => {
+                let mut om = om.clone();
+                if om.contains_key(key) {
+                    om.remove(key);
+                }
+                Ok(T::OrderedMap(om))
+            }
+            _ => Err(Error::Reason("Dissoc not available for type".to_owned())),
+        },
     }
 }

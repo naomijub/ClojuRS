@@ -4,6 +4,7 @@ use num_traits::{FromPrimitive, ToPrimitive};
 use ordered_float::OrderedFloat;
 
 use crate::definitions::DefinitionTypes;
+use crate::error::Error;
 use crate::DATA;
 
 pub trait MaybeReplaceExt<'a> {
@@ -127,4 +128,18 @@ pub(crate) fn partial_cmp(s: &DefinitionTypes, other: &DefinitionTypes) -> Optio
         (_, DefinitionTypes::Nil) => Some(Ordering::Less),
         _ => None,
     }
+}
+
+pub(crate) fn arity_exception(
+    func: &str,
+    arity: usize,
+    len: usize,
+) -> Option<Result<DefinitionTypes, Error>> {
+    if len > arity {
+        return Some(Err(Error::ArityException(
+            arity as u16,
+            format!("`{}` has arity of {} but received {}", func, arity, len),
+        )));
+    }
+    None
 }

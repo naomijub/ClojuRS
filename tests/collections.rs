@@ -120,6 +120,13 @@ fn ordered_map() {
         read("(get (sorted-map 1 1 1.2 1.2 true false) 5)").unwrap(),
         "nil"
     );
+    assert_eq!(
+        read("(get (sorted-map 1 2 1.2 1.3 true false) 1.3 :oh-no :oh-no-no)").err(),
+        Some(Error::ArityException(
+            3,
+            "`get` has arity of 3 but received 4".to_string()
+        ))
+    );
 }
 
 #[test]
@@ -159,5 +166,49 @@ fn assoc() {
     assert_eq!(
         read("(assoc (sorted-map  :key2 :value2 ) :key :new-value)").unwrap(),
         "{:key :new-value :key2 :value2 }"
+    );
+    assert_eq!(
+        read("(assoc (sorted-map  :key2 :value2 ) :key :other-key :oh-no)").err(),
+        Some(Error::ArityException(
+            3,
+            "`assoc` has arity of 3 but received 4".to_string()
+        ))
+    );
+}
+
+#[test]
+fn dissoc() {
+    assert_eq!(
+        read("(dissoc)").err(),
+        Some(Error::Reason(
+            "Collection is required for dissoc".to_owned()
+        ))
+    );
+    assert_eq!(
+        read("(dissoc {})").err(),
+        Some(Error::Reason(
+            "Access index/key is required for dissoc".to_owned()
+        ))
+    );
+    assert_eq!(
+        read("(dissoc [] 0)").err(),
+        Some(Error::Reason("Dissoc not available for type".to_owned()))
+    );
+    assert_eq!(read("(dissoc {} :key)").unwrap(), "{}");
+    assert_eq!(read("(dissoc {:key :value} :key)").unwrap(), "{}");
+    assert_eq!(
+        read("(dissoc {:key :value :key2 :value2 } :key)").unwrap(),
+        "{:key2 :value2 }"
+    );
+    assert_eq!(
+        read("(dissoc (sorted-map :key :value :key2 :value2 ) :key)").unwrap(),
+        "{:key2 :value2 }"
+    );
+    assert_eq!(
+        read("(dissoc (sorted-map  :key2 :value2 ) :key :other-key)").err(),
+        Some(Error::ArityException(
+            2,
+            "`dissoc` has arity of 2 but received 3".to_string()
+        ))
     );
 }
