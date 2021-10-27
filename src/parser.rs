@@ -137,7 +137,7 @@ fn read_number(n: char, chars: &mut std::iter::Enumerate<std::str::Chars>) -> Re
     let i = chars
         .clone()
         .next()
-        .ok_or_else(|| Error::Reason("Could not identify symbol index".to_string()))?
+        .ok_or_else(|| Error::Reason("Could not identify number index".to_string()))?
         .0;
 
     let c_len = chars
@@ -176,7 +176,7 @@ fn read_char(chars: &mut std::iter::Enumerate<std::str::Chars>) -> Result<T, Err
     let i = chars
         .clone()
         .next()
-        .ok_or_else(|| Error::Reason("Could not identify symbol index".to_string()))?
+        .ok_or_else(|| Error::Reason("Could not identify char index".to_string()))?
         .0;
     let c = chars.next();
     c.ok_or(format!("{:?} could not be parsed at char count {}", c, i))
@@ -192,7 +192,7 @@ fn read_bool_or_nil(
     let i = chars
         .clone()
         .next()
-        .ok_or_else(|| Error::Reason("Could not identify symbol index".to_string()))?
+        .ok_or_else(|| Error::Reason("Could not identify bool/nill index".to_string()))?
         .0;
     match c {
         't' if {
@@ -257,7 +257,7 @@ fn read_vec(chars: &mut std::iter::Enumerate<std::str::Chars>) -> Result<T, Erro
     let i = chars
         .clone()
         .next()
-        .ok_or_else(|| Error::Reason("Could not identify symbol index".to_string()))?
+        .ok_or_else(|| Error::Reason("Could not identify vec index".to_string()))?
         .0;
     let mut res: Vec<T> = vec![];
     loop {
@@ -281,7 +281,7 @@ fn read_list(chars: &mut std::iter::Enumerate<std::str::Chars>) -> Result<T, Err
     let i = chars
         .clone()
         .next()
-        .ok_or_else(|| Error::Reason("Could not identify symbol index".to_string()))?
+        .ok_or_else(|| Error::Reason("Could not identify list index".to_string()))?
         .0;
     let mut res: Vec<T> = vec![];
     loop {
@@ -305,7 +305,7 @@ fn read_set(chars: &mut std::iter::Enumerate<std::str::Chars>) -> Result<T, Erro
     let i = chars
         .clone()
         .next()
-        .ok_or_else(|| Error::Reason("Could not identify symbol index".to_string()))?
+        .ok_or_else(|| Error::Reason("Could not identify set index".to_string()))?
         .0;
     let mut res: HashSet<T> = HashSet::new();
     loop {
@@ -371,7 +371,7 @@ fn read_map(chars: &mut std::iter::Enumerate<std::str::Chars>) -> Result<T, Erro
     let i = chars
         .clone()
         .next()
-        .ok_or_else(|| Error::Reason("Could not identify symbol index".to_string()))?
+        .ok_or_else(|| Error::Reason("Could not identify map index".to_string()))?
         .0;
     let mut res: HashMap<T, T> = HashMap::new();
     let mut key: Option<T> = None;

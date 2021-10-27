@@ -13,6 +13,10 @@ use parser::{parse, tokenize};
 use im::{hashmap, HashMap as Hamt};
 
 use crate::funtions::{
+    collections::{
+        assoc, contains, dissoc, get, to_hashmap, to_hashset, to_orderedmap, to_orderedset,
+        to_vector,
+    },
     logic::{eq, ge, greater, is_false, is_nil, is_true, le, lesser},
     math::{div, is_negative, is_numeric, is_positive, mul, plus, sub},
     meaning_of_life,
@@ -48,6 +52,15 @@ lazy_static! {
         String::from("str") => str as Func,
         String::from("println!") => println as Func,
         String::from("keyword") => to_keyword as Func,
+        String::from("vector") => to_vector as Func,
+        String::from("get") => get as Func,
+        String::from("sorted-set") => to_orderedset as Func,
+        String::from("hash-set") => to_hashset as Func,
+        String::from("hash-map") => to_hashmap as Func,
+        String::from("sorted-map") => to_orderedmap as Func,
+        String::from("assoc") => assoc as Func,
+        String::from("dissoc") => dissoc as Func,
+        String::from("contains?") => contains as Func,
     };
     pub static ref LOCAL: Mutex<Hamt<String, Func>> = Mutex::new(Hamt::new());
     pub static ref DATA: Mutex<Hamt<String, T>> = Mutex::new(Hamt::new());
