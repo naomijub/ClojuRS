@@ -17,6 +17,24 @@ pub fn get(info: &[T]) -> Result<T, Error> {
             "Access index is required for get",
         ))),
         (Some(collection), Some(index), not_found) => match collection {
+            T::String(s) => match (index.to_usize(), not_found) {
+                (None, Some(nf)) => Ok(nf.clone()),
+                (None, None) => Err(Error::IntParseError),
+                (Some(idx), None) => {
+                    Ok(T::Char(s.chars().nth(idx).ok_or_else(|| {
+                        Error::Reason("Index out of bounds".to_string())
+                    })?))
+                }
+                (Some(idx), Some(nf)) => {
+                    if s.len() > idx {
+                        Ok(T::Char(s.chars().nth(idx).ok_or_else(|| {
+                            Error::Reason("Index out of bounds".to_string())
+                        })?))
+                    } else {
+                        Ok(nf.clone())
+                    }
+                }
+            },
             T::HashSet(hs) => {
                 if hs.contains(index) {
                     Ok(index.clone())
@@ -225,6 +243,81 @@ pub fn dissoc(info: &[T]) -> Result<T, Error> {
                 Ok(T::OrderedMap(om))
             }
             _ => Err(Error::Reason("Dissoc not available for type".to_owned())),
+        },
+    }
+}
+
+pub fn contains(info: &[T]) -> Result<T, Error> {
+    if let Some(value) = arity_exception("contains?", 2, info.len()) {
+        return value;
+    }
+
+    match (info.get(0), info.get(1)) {
+        (None, _) => Err(Error::Reason(String::from(
+            "Collection is required for contains?",
+        ))),
+        (_, None) => Err(Error::Reason(String::from(
+            "Access index/key is required for contains?",
+        ))),
+        (Some(collection), Some(index)) => match collection {
+            T::String(s) => {
+                let evaluated_index = match index {
+                    T::String(s) => s.to_owned(),
+                    T::Char(c) => String::from(c.to_owned()),
+                    _ => index.print()?,
+                };
+
+                Ok(T::Bool(s.contains(&evaluated_index)))
+            }
+            T::HashSet(hs) => {
+                if hs.contains(index) {
+                    Ok(T::Bool(true))
+                } else {
+                    Ok(T::Bool(false))
+                }
+            }
+            T::OrderedSet(os) => {
+                if os.contains(index) {
+                    Ok(T::Bool(true))
+                } else {
+                    Ok(T::Bool(false))
+                }
+            }
+            T::HashMap(hm) => {
+                if hm.contains_key(index) {
+                    Ok(T::Bool(true))
+                } else {
+                    Ok(T::Bool(false))
+                }
+            }
+            T::OrderedMap(om) => {
+                if om.contains_key(index) {
+                    Ok(T::Bool(true))
+                } else {
+                    Ok(T::Bool(false))
+                }
+            }
+            T::List(_) => {
+                let l = collection.to_owned().eval()?;
+                contains(&[l, index.clone()])
+            }
+            T::Vector(v) => match index {
+                T::Int(idx) => {
+                    if let Some(idx) = idx.to_usize() {
+                        if v.len() > idx {
+                            Ok(T::Bool(true))
+                        } else {
+                            Ok(T::Bool(false))
+                        }
+                    } else {
+                        Err(Error::IntParseError)
+                    }
+                }
+                _ => Err(Error::Reason(String::from("Index must be an integer"))),
+            },
+            _ => Err(Error::Reason(String::from(
+                "First argument must be a collection or a string for contains?",
+            ))),
         },
     }
 }

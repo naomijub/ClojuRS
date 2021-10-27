@@ -14,7 +14,8 @@ use im::{hashmap, HashMap as Hamt};
 
 use crate::funtions::{
     collections::{
-        assoc, dissoc, get, to_hashmap, to_hashset, to_orderedmap, to_orderedset, to_vector,
+        assoc, contains, dissoc, get, to_hashmap, to_hashset, to_orderedmap, to_orderedset,
+        to_vector,
     },
     logic::{eq, ge, greater, is_false, is_nil, is_true, le, lesser},
     math::{div, is_negative, is_numeric, is_positive, mul, plus, sub},
@@ -59,6 +60,7 @@ lazy_static! {
         String::from("sorted-map") => to_orderedmap as Func,
         String::from("assoc") => assoc as Func,
         String::from("dissoc") => dissoc as Func,
+        String::from("contains?") => contains as Func,
     };
     pub static ref LOCAL: Mutex<Hamt<String, Func>> = Mutex::new(Hamt::new());
     pub static ref DATA: Mutex<Hamt<String, T>> = Mutex::new(Hamt::new());

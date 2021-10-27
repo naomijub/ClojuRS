@@ -125,6 +125,20 @@ impl PartialEq for DefinitionTypes {
 }
 
 impl DefinitionTypes {
+    pub fn to_usize(&self) -> Option<usize> {
+        match self {
+            DefinitionTypes::Int(bi) => bi.to_usize(),
+            DefinitionTypes::Rational(num, den) => {
+                if num % den == BigInt::from(0) {
+                    (num / den).to_usize()
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        }
+    }
+
     pub fn print(&self) -> Result<String, Error> {
         let res = match self.clone() {
             DefinitionTypes::Symbol(el) => el,

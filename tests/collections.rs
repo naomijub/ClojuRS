@@ -130,6 +130,20 @@ fn ordered_map() {
 }
 
 #[test]
+fn get_str() {
+    assert_eq!(read("(get \"hellow\" 5)").unwrap(), "\\w");
+    assert_eq!(
+        read("(get \"hellow\" 10)").err(),
+        Some(Error::Reason("Index out of bounds".to_string()))
+    );
+    assert_eq!(read("(get \"hellow\" 10 :oh-no)").unwrap(), ":oh-no");
+    assert_eq!(
+        read("(get \"hellow\" \\f)").err(),
+        Some(Error::IntParseError)
+    );
+}
+
+#[test]
 fn assoc() {
     assert_eq!(
         read("(assoc)").err(),
@@ -210,5 +224,48 @@ fn dissoc() {
             2,
             "`dissoc` has arity of 2 but received 3".to_string()
         ))
+    );
+}
+
+#[test]
+fn contains() {
+    assert_eq!(read("(contains? \":hello\" :hell)").unwrap(), "true");
+    assert_eq!(read("(contains? \"hello\" \"ll\")").unwrap(), "true");
+    assert_eq!(read("(contains? \"hello\" \\l)").unwrap(), "true");
+    assert_eq!(read("(contains? #{1 2 3 4 } 3)").unwrap(), "true");
+    assert_eq!(read("(contains? #{1 2 3 4 } 33)").unwrap(), "false");
+    assert_eq!(read("(contains? (sorted-set 1 2 3 4 ) 3)").unwrap(), "true");
+    assert_eq!(
+        read("(contains? (sorted-set 1 2 3 4 ) 33)").unwrap(),
+        "false"
+    );
+    assert_eq!(read("(contains? {:a 2 :b 4 } :a)").unwrap(), "true");
+    assert_eq!(read("(contains? {:a 2 :b 4 } :d)").unwrap(), "false");
+    assert_eq!(
+        read("(contains? (sorted-map :a 2 :b 4 ) :a)").unwrap(),
+        "true"
+    );
+    assert_eq!(
+        read("(contains? (sorted-map :a 2 :b 4 ) :d)").unwrap(),
+        "false"
+    );
+    assert_eq!(read("(contains? [:a 2 :b 4 ] 0)").unwrap(), "true");
+    assert_eq!(read("(contains? [:a 2 :b 4 ] 10)").unwrap(), "false");
+    assert_eq!(
+        read("(contains? [:a 2 :b 4 ] 0 0)").err(),
+        Some(Error::ArityException(
+            2,
+            "`contains?` has arity of 2 but received 3".to_string()
+        ))
+    );
+    assert_eq!(
+        read("(contains? :key 0)").err(),
+        Some(Error::Reason(
+            "First argument must be a collection or a string for contains?".to_string()
+        ))
+    );
+    assert_eq!(
+        read("(contains? [:a 2 :b 4 ] :a)").err(),
+        Some(Error::Reason(String::from("Index must be an integer")))
     );
 }
